@@ -1,0 +1,54 @@
+# Python
+
+**pycache**/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Entorno virtual
+
+venv/
+.venv/
+env/
+ENV/
+
+# Variables de entorno
+
+.env
+.env.*
+
+# Archivos de Flask
+
+instance/
+
+# Datos locales
+
+data/admin.json
+data/creators.json
+
+# Archivos temporales
+
+*.tmp
+*.log
+
+# IDE / editores
+
+.vscode/
+.idea/
+
+# Sistema operativo
+
+.DS_Store
+Thumbs.db
+
+# Uploads locales
+
+static/uploads/*
+!static/uploads/.gitkeep
+# Base de datos local
+*.db
+*.sqlite
+*.sqlite3
+
+# Datos privados
+data.json

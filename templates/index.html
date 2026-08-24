@@ -1,0 +1,1102 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>VERTEXMONT</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='style.css') }}"
+    >
+
+</head>
+
+
+<body>
+
+
+<!-- =================================
+     NAVBAR
+================================= -->
+
+<header class="navbar">
+
+    <div class="brand">
+
+        <div class="vertex-logo">
+
+            <span></span>
+            <span></span>
+
+        </div>
+
+        <span>
+             VERTEXMONT
+        </span>
+
+    </div>
+
+
+    <button
+        class="menu-button"
+        onclick="openMenu()"
+    >
+        ☰
+    </button>
+
+</header>
+
+
+<!-- =================================
+     ADMIN BAR
+================================= -->
+
+{% if admin %}
+
+<div class="admin-bar">
+
+    <button onclick="openChangePassword(); closeMenu()">
+    🔑 Cambiar contraseña
+</button>
+
+    <span>
+        Modo administración
+    </span>
+
+    <button onclick="openCreator()">
+        + Agregar creador
+    </button>
+
+    <button onclick="logout()">
+        Cerrar sesión
+    </button>
+
+</div>
+
+{% endif %}
+
+
+<!-- =================================
+     CATÁLOGO
+================================= -->
+
+<main>
+
+    <section class="hero">
+
+        <h1>
+            Creadores
+        </h1>
+
+        <p>
+            Descubre los creadores de  VERTEXMONT
+        </p>
+
+
+        <!-- BUSCADOR -->
+
+        <div class="search-container">
+
+            <span>
+                🔍
+            </span>
+
+            <input
+                id="search"
+                type="text"
+                placeholder="Buscar creador..."
+                oninput="renderCreators()"
+            >
+
+        </div>
+
+    </section>
+
+
+    <!-- AQUÍ SOLO ESTÁN LOS CREADORES -->
+    <!-- NO HAY ALL A B C D -->
+
+    <section
+        id="creatorGrid"
+        class="creator-grid"
+    ></section>
+
+</main>
+
+
+<!-- =================================
+     MENÚ
+================================= -->
+
+<div
+    id="menuOverlay"
+    class="overlay"
+    onclick="closeMenuOutside(event)"
+>
+
+    <aside class="side-menu">
+
+        <button
+            class="close-button"
+            onclick="closeMenu()"
+        >
+            ×
+        </button>
+
+
+        <h2>
+            Opciones
+        </h2>
+
+
+        <!-- APARIENCIA -->
+
+        <section class="menu-section">
+
+            <h3>
+                Apariencia
+            </h3>
+
+
+            <button onclick="setTheme('light')">
+
+                ☀️ Tema claro
+
+            </button>
+
+
+            <button onclick="setTheme('dark')">
+
+                🌙 Tema oscuro
+
+            </button>
+
+
+            <button onclick="setTheme('system')">
+
+                ◐ Automático
+
+            </button>
+
+        </section>
+
+
+        <!-- ORDEN -->
+
+        <section class="menu-section">
+
+            <h3>
+                Ordenar creadores
+            </h3>
+
+
+            <button onclick="sortCreators('az')">
+
+                A → Z
+
+            </button>
+
+
+            <button onclick="sortCreators('za')">
+
+                Z → A
+
+            </button>
+
+
+            <button onclick="sortCreators('followers')">
+
+                Más seguidores
+
+            </button>
+
+
+            <button onclick="sortCreators('views')">
+
+                Más vistas
+
+            </button>
+
+        </section>
+
+
+        <!-- ADMIN -->
+
+        <section class="menu-section">
+
+            <h3>
+                Administración
+            </h3>
+
+
+            {% if admin %}
+
+            <button
+                class="admin-button"
+                onclick="openCreator(); closeMenu()"
+            >
+
+                ＋ Agregar creador
+
+            </button>
+
+
+            <button onclick="logout()">
+
+                Cerrar sesión
+
+            </button>
+
+
+            {% else %}
+
+            <button
+                class="admin-button"
+                onclick="openLogin(); closeMenu()"
+            >
+
+                🔐 Iniciar sesión
+
+            </button>
+
+            {% endif %}
+
+        </section>
+
+    </aside>
+
+</div>
+
+
+<!-- =================================
+     LOGIN
+================================= -->
+
+<div
+    id="loginModal"
+    class="modal"
+>
+
+    <div class="modal-box small">
+
+        <button
+            class="close-button"
+            onclick="closeLogin()"
+        >
+            ×
+        </button>
+
+
+        <div class="modal-icon">
+
+            🔐
+
+        </div>
+
+
+        <h2>
+            Administración
+        </h2>
+
+
+        <p>
+            Inicia sesión para modificar el catálogo.
+        </p>
+
+
+        <form
+            id="loginForm"
+            action="/login"
+            method="POST"
+        >
+
+            <label>
+                Usuario
+            </label>
+
+            <input
+                name="username"
+                required
+            >
+
+
+            <label>
+                Contraseña
+            </label>
+
+            <input
+                name="password"
+                type="password"
+                required
+            >
+
+
+            <button
+                class="primary-button"
+                type="submit"
+            >
+
+                Iniciar sesión
+
+            </button>
+
+        </form>
+
+    </div>
+
+</div>
+
+
+<!-- =================================
+     AGREGAR / EDITAR
+================================= -->
+
+<div
+    id="creatorModal"
+    class="modal"
+>
+
+    <div class="modal-box">
+
+        <button
+            class="close-button"
+            onclick="closeCreator()"
+        >
+            ×
+        </button>
+
+
+        <h2 id="creatorModalTitle">
+
+            Agregar creador
+
+        </h2>
+
+
+        <p>
+            Completa los datos manualmente
+            o importa un CSV.
+        </p>
+
+
+        <!-- CSV -->
+
+        <div class="csv-import-box">
+
+            <div class="csv-import-title">
+
+                <span>
+                    📄
+                </span>
+
+                <div>
+
+                    <strong>
+                        Importar estadísticas CSV
+                    </strong>
+
+                    <small>
+                        Los campos se rellenarán automáticamente.
+                    </small>
+
+                </div>
+
+            </div>
+
+
+            <div class="csv-actions">
+
+                <label class="csv-button">
+
+                    Seleccionar CSV
+
+                    <input
+                        id="csvFile"
+                        type="file"
+                        accept=".csv,text/csv"
+                        hidden
+                    >
+
+                </label>
+
+
+                <button
+                    type="button"
+                    class="csv-example"
+                    onclick="downloadCsvExample()"
+                >
+
+                    Descargar ejemplo
+
+                </button>
+
+            </div>
+
+
+            <div
+                id="csvStatus"
+                class="csv-status"
+            ></div>
+
+        </div>
+
+
+        <!-- FORMULARIO -->
+
+        <form
+            id="creatorForm"
+            enctype="multipart/form-data"
+        >
+
+
+            <div class="form-grid">
+
+
+                <div class="field full">
+
+                    <label>
+                        Foto de perfil
+                    </label>
+
+                    <input
+                        name="photo"
+                        type="file"
+                        accept="image/*"
+                    >
+
+                </div>
+
+
+                <div class="field">
+
+                    <label>
+                        Nombre
+                    </label>
+
+                    <input
+                        name="name"
+                        required
+                    >
+
+                </div>
+
+
+                <div class="field">
+
+                    <label>
+                        Usuario TikTok
+                    </label>
+
+                    <input
+                        name="handle"
+                        placeholder="ejemplo_usuario o @ejemplo_usuario"
+                        required
+                    >
+
+                </div>
+
+
+                <div class="field">
+
+                    <label>
+                        Categoría
+                    </label>
+
+                    <input
+                        name="category"
+                        placeholder="Gaming, Lifestyle..."
+                    >
+
+                </div>
+
+
+                <div class="field">
+
+                    <label>
+                        País
+                    </label>
+
+                    <input
+                        name="country"
+                        placeholder="Honduras"
+                    >
+
+                </div>
+
+
+                <div class="field">
+
+                    <label>
+                        Seguidores
+                    </label>
+
+                    <input
+                        name="followers"
+                    >
+
+                </div>
+
+
+                <div class="field">
+
+                    <label>
+                        Likes
+                    </label>
+
+                    <input
+                        name="likes"
+                    >
+
+                </div>
+
+
+                <div class="field">
+
+                    <label>
+                        Vistas promedio
+                    </label>
+
+                    <input
+                        name="views"
+                    >
+
+                </div>
+
+
+                <div class="field">
+
+                    <label>
+                        Videos
+                    </label>
+
+                    <input
+                        name="videos"
+                    >
+
+                </div>
+
+
+                <div class="field">
+
+                    <label>
+                        Engagement
+                    </label>
+
+                    <input
+                        name="engagement"
+                    >
+
+                </div>
+
+
+                <div class="field">
+
+                    <label>
+                        TikTok
+                    </label>
+
+                    <input
+                        name="tiktok"
+                        placeholder="Se genera automáticamente con el usuario"
+                    >
+
+                </div>
+
+
+                <div class="field">
+
+                    <label>
+                        Instagram
+                    </label>
+
+                    <input
+                        name="instagram"
+                    >
+
+                </div>
+
+
+                <div class="field">
+
+                    <label>
+                        YouTube
+                    </label>
+
+                    <input
+                        name="youtube"
+                    >
+
+                </div>
+
+
+                <div class="field">
+
+                    <label>
+                        Likes promedio
+                    </label>
+
+                    <input
+                        name="average_likes"
+                    >
+
+                </div>
+
+
+                <div class="field">
+
+                    <label>
+                        Comentarios promedio
+                    </label>
+
+                    <input
+                        name="average_comments"
+                    >
+
+                </div>
+
+
+                <div class="field">
+
+                    <label>
+                        Compartidos promedio
+                    </label>
+
+                    <input
+                        name="average_shares"
+                    >
+
+                </div>
+
+
+            </div>
+
+
+            <div class="form-actions">
+
+                <button
+                    type="button"
+                    class="secondary-button"
+                    onclick="closeCreator()"
+                >
+
+                    Cancelar
+
+                </button>
+
+
+                <button
+                    type="submit"
+                    class="primary-button"
+                >
+
+                    Guardar creador
+
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+
+<!-- =================================
+     PERFIL
+================================= -->
+
+<div
+    id="profileModal"
+    class="profile-modal"
+>
+
+    <header class="profile-navbar">
+
+        <button
+            onclick="closeProfile()"
+            class="back-button"
+        >
+
+            ← Volver
+
+        </button>
+
+
+        <strong>
+             VERTEXMONT
+        </strong>
+
+    </header>
+
+
+    <main class="profile-content">
+
+
+        <div class="profile-header">
+
+            <img
+                id="profilePhoto"
+                class="profile-photo"
+            >
+
+
+            <div>
+
+                <h1 id="profileName">
+
+                    —
+
+                </h1>
+
+
+                <p id="profileHandle">
+
+                    —
+
+                </p>
+
+
+                <span
+                    id="profileCategory"
+                    class="category"
+                >
+
+                    —
+
+                </span>
+
+
+                <span
+                    id="profileCountry"
+                    class="category"
+                >
+
+                    —
+
+                </span>
+
+            </div>
+
+        </div>
+
+
+        <!-- STATS -->
+
+        <div class="stats-grid">
+
+
+            <div class="stat-card">
+
+                <span>
+                    Seguidores
+                </span>
+
+                <strong id="profileFollowers">
+
+                    —
+
+                </strong>
+
+            </div>
+
+
+            <div class="stat-card">
+
+                <span>
+                    Likes
+                </span>
+
+                <strong id="profileLikes">
+
+                    —
+
+                </strong>
+
+            </div>
+
+
+            <div class="stat-card">
+
+                <span>
+                    Vistas promedio
+                </span>
+
+                <strong id="profileViews">
+
+                    —
+
+                </strong>
+
+            </div>
+
+
+            <div class="stat-card">
+
+                <span>
+                    Videos
+                </span>
+
+                <strong id="profileVideos">
+
+                    —
+
+                </strong>
+
+            </div>
+
+
+            <div class="stat-card">
+
+                <span>
+                    Engagement
+                </span>
+
+                <strong id="profileEngagement">
+
+                    —
+
+                </strong>
+
+            </div>
+
+
+            <div class="stat-card">
+
+                <span>
+                    Likes promedio
+                </span>
+
+                <strong id="profileAverageLikes">
+
+                    —
+
+                </strong>
+
+            </div>
+
+
+            <div class="stat-card">
+
+                <span>
+                    Comentarios promedio
+                </span>
+
+                <strong id="profileAverageComments">
+
+                    —
+
+                </strong>
+
+            </div>
+
+
+            <div class="stat-card">
+
+                <span>
+                    Compartidos promedio
+                </span>
+
+                <strong id="profileAverageShares">
+
+                    —
+
+                </strong>
+
+            </div>
+
+        </div>
+
+
+        <!-- REDES -->
+
+        <section class="social-card">
+
+            <h3>
+                Redes sociales
+            </h3>
+
+            <div id="socialLinks"></div>
+
+        </section>
+
+
+        {% if admin %}
+
+        <div class="profile-actions">
+
+            <button
+                class="primary-button"
+                onclick="editCurrentCreator()"
+            >
+
+                Editar creador
+
+            </button>
+
+
+            <button
+                class="danger-button"
+                onclick="deleteCurrentCreator()"
+            >
+
+                Eliminar
+
+            </button>
+
+        </div>
+
+        {% endif %}
+
+<div class="profile-actions">
+
+    <button
+        class="primary-button"
+        onclick="requestCreator()"
+    >
+        📩 Solicitar creador
+    </button>
+
+    </main>
+
+</div>
+
+
+<!-- =================================
+     DATOS
+================================= -->
+
+<script
+    type="application/json"
+    id="vertex-data"
+>
+{{ {
+    "creators": creators,
+    "admin": admin
+} | tojson }}
+</script>
+
+
+<script>
+
+const VERTEX_DATA =
+    JSON.parse(
+        document.getElementById(
+            "vertex-data"
+        ).textContent
+    );
+
+const creators =
+    VERTEX_DATA.creators;
+
+const IS_ADMIN =
+    VERTEX_DATA.admin;
+
+</script>
+
+
+
+<!-- =================================
+     CAMBIAR CONTRASEÑA
+================================= -->
+
+<div
+    id="changePasswordModal"
+    class="modal"
+>
+    <div class="modal-box small">
+
+        <button
+            class="close-button"
+            onclick="closeChangePassword()"
+        >
+            ×
+        </button>
+
+        <div class="modal-icon">
+            🔑
+        </div>
+
+        <h2>
+            Cambiar contraseña
+        </h2>
+
+        <p>
+            Cambia la contraseña de administrador.
+        </p>
+
+        <form id="changePasswordForm">
+
+            <label>
+                Contraseña actual
+            </label>
+
+            <input
+                name="current_password"
+                type="password"
+                required
+            >
+
+            <label>
+                Nueva contraseña
+            </label>
+
+            <input
+                name="new_password"
+                type="password"
+                minlength="6"
+                required
+            >
+
+            <label>
+                Confirmar nueva contraseña
+            </label>
+
+            <input
+                name="confirm_password"
+                type="password"
+                minlength="6"
+                required
+            >
+
+            <div
+                id="changePasswordStatus"
+                class="csv-status"
+            ></div>
+
+            <div class="form-actions">
+
+                <button
+                    type="button"
+                    class="secondary-button"
+                    onclick="closeChangePassword()"
+                >
+                    Cancelar
+                </button>
+
+                <button
+                    type="submit"
+                    class="primary-button"
+                >
+                    Cambiar contraseña
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+</div>
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+
+</body>
+
+</html>
