@@ -1540,7 +1540,7 @@ Usuario: ${creatorHandle}
 País: ${creatorCountry}
 Categoría: ${creatorCategory}
 
-Me gustaría solicitar que este creador sea gestionado/agregado.
+Me gustaría solicitar este creador para publicitar mi marca.
 
 Gracias.`;
 

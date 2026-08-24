@@ -29,6 +29,8 @@ app = Flask(__name__)
 
 app.secret_key = "vertex_month_secret_2026_change_this"
 
+app.permanent_session_lifetime = 60 * 60 * 24 * 7
+
 
 # ==========================================
 # CARPETAS
@@ -49,9 +51,14 @@ UPLOAD_FOLDER = os.path.join(
     "uploads"
 )
 
-CREATORS_FILE = os.path.join(
+
+# ==========================================
+# ARCHIVOS JSON
+# ==========================================
+
+DATA_FILE = os.path.join(
     DATA_DIR,
-    "creators.json"
+    "data.json"
 )
 
 ADMIN_FILE = os.path.join(
@@ -59,6 +66,10 @@ ADMIN_FILE = os.path.join(
     "admin.json"
 )
 
+
+# ==========================================
+# CREAR CARPETAS
+# ==========================================
 
 os.makedirs(
     DATA_DIR,
@@ -72,39 +83,45 @@ os.makedirs(
 
 
 # ==========================================
-# CREAR CREATORS.JSON SI NO EXISTE
-# ==========================================
-
-if not os.path.exists(CREATORS_FILE):
-
-    with open(
-        CREATORS_FILE,
-        "w",
-        encoding="utf-8"
-    ) as file:
-
-        json.dump(
-            [],
-            file,
-            ensure_ascii=False,
-            indent=4
-        )
-
-
-# ==========================================
 # ADMIN
 # ==========================================
 
 ADMIN_USERNAME = "admin"
 
-# Esta es la contraseña inicial.
-# Si admin.json ya existe, NO reemplaza
-# automáticamente la contraseña guardada.
 DEFAULT_ADMIN_PASSWORD = "admin123"
 
 
 # ==========================================
-# CREAR ADMIN.JSON SI NO EXISTE
+# CREAR DATA.JSON
+# ==========================================
+
+if not os.path.exists(DATA_FILE):
+
+    try:
+
+        with open(
+            DATA_FILE,
+            "w",
+            encoding="utf-8"
+        ) as file:
+
+            json.dump(
+                [],
+                file,
+                ensure_ascii=False,
+                indent=4
+            )
+
+    except Exception as error:
+
+        print(
+            "ERROR creando data.json:",
+            error
+        )
+
+
+# ==========================================
+# CREAR ADMIN.JSON
 # ==========================================
 
 if not os.path.exists(ADMIN_FILE):
@@ -116,72 +133,27 @@ if not os.path.exists(ADMIN_FILE):
         )
     }
 
-    with open(
-        ADMIN_FILE,
-        "w",
-        encoding="utf-8"
-    ) as file:
+    try:
 
-        json.dump(
-            initial_admin,
-            file,
-            ensure_ascii=False,
-            indent=4
+        with open(
+            ADMIN_FILE,
+            "w",
+            encoding="utf-8"
+        ) as file:
+
+            json.dump(
+                initial_admin,
+                file,
+                ensure_ascii=False,
+                indent=4
+            )
+
+    except Exception as error:
+
+        print(
+            "ERROR creando admin.json:",
+            error
         )
-
-
-# ==========================================
-# DETECTAR HASH
-# ==========================================
-
-def is_password_hash(value):
-
-    value = str(value or "")
-
-    return (
-        value.startswith("scrypt:")
-        or value.startswith("pbkdf2:")
-        or value.startswith("argon2:")
-    )
-
-
-# ==========================================
-# COMPROBAR CONTRASEÑA
-# ==========================================
-
-def verify_password(stored_password, entered_password):
-
-    stored_password = str(
-        stored_password or ""
-    )
-
-    entered_password = str(
-        entered_password or ""
-    )
-
-    if not stored_password:
-        return False
-
-    # Contraseña guardada como hash
-    if is_password_hash(stored_password):
-
-        try:
-            return check_password_hash(
-                stored_password,
-                entered_password
-            )
-        except Exception as error:
-
-            print(
-                "ERROR verificando hash:",
-                error
-            )
-
-            return False
-
-    # Compatibilidad con contraseñas antiguas
-    # guardadas como texto normal
-    return stored_password == entered_password
 
 
 # ==========================================
@@ -192,20 +164,21 @@ def load_admin():
 
     try:
 
-        if not os.path.exists(ADMIN_FILE):
-
-            print(
-                "admin.json no existe. Creándolo..."
-            )
+        if not os.path.exists(
+            ADMIN_FILE
+        ):
 
             admin_data = {
                 "username": ADMIN_USERNAME,
-                "password": generate_password_hash(
-                    DEFAULT_ADMIN_PASSWORD
-                )
+                "password":
+                    generate_password_hash(
+                        DEFAULT_ADMIN_PASSWORD
+                    )
             }
 
-            save_admin(admin_data)
+            save_admin(
+                admin_data
+            )
 
             return admin_data
 
@@ -217,7 +190,10 @@ def load_admin():
 
             data = json.load(file)
 
-        if not isinstance(data, dict):
+        if not isinstance(
+            data,
+            dict
+        ):
 
             print(
                 "ERROR: admin.json no contiene un objeto válido."
@@ -241,19 +217,19 @@ def load_admin():
 # GUARDAR ADMIN
 # ==========================================
 
-def save_admin(admin_data):
+def save_admin(
+    admin_data
+):
 
     temp_file = ADMIN_FILE + ".tmp"
 
     try:
 
-        # Crear el directorio por seguridad
         os.makedirs(
             DATA_DIR,
             exist_ok=True
         )
 
-        # Escribir archivo temporal
         with open(
             temp_file,
             "w",
@@ -269,21 +245,24 @@ def save_admin(admin_data):
 
             file.flush()
 
-            # Intentar asegurar que se escriba
-            # físicamente en disco
             try:
-                os.fsync(file.fileno())
+
+                os.fsync(
+                    file.fileno()
+                )
+
             except Exception:
+
                 pass
 
-        # Reemplazo atómico
         os.replace(
             temp_file,
             ADMIN_FILE
         )
 
-        # Comprobar que realmente existe
-        if not os.path.exists(ADMIN_FILE):
+        if not os.path.exists(
+            ADMIN_FILE
+        ):
 
             print(
                 "ERROR: admin.json no existe después de guardar."
@@ -291,7 +270,6 @@ def save_admin(admin_data):
 
             return False
 
-        # Volver a leer y comprobar que sea JSON válido
         with open(
             ADMIN_FILE,
             "r",
@@ -311,14 +289,6 @@ def save_admin(admin_data):
 
             return False
 
-        print(
-            "ADMIN GUARDADO CORRECTAMENTE:"
-        )
-
-        print(
-            ADMIN_FILE
-        )
-
         return True
 
     except Exception as error:
@@ -328,13 +298,18 @@ def save_admin(admin_data):
             error
         )
 
-        # Intentar limpiar temporal
         try:
 
-            if os.path.exists(temp_file):
-                os.remove(temp_file)
+            if os.path.exists(
+                temp_file
+            ):
+
+                os.remove(
+                    temp_file
+                )
 
         except Exception:
+
             pass
 
         return False
@@ -348,24 +323,65 @@ def load_creators():
 
     try:
 
+        if not os.path.exists(
+            DATA_FILE
+        ):
+
+            save_creators([])
+
+            return []
+
         with open(
-            CREATORS_FILE,
+            DATA_FILE,
             "r",
             encoding="utf-8"
         ) as file:
 
             data = json.load(file)
 
-        if isinstance(data, list):
+        # ==================================
+        # FORMATO PRINCIPAL
+        # ==================================
+
+        if isinstance(
+            data,
+            list
+        ):
 
             return data
+
+        # ==================================
+        # COMPATIBILIDAD SI data.json
+        # TIENE {"creators": []}
+        # ==================================
+
+        if isinstance(
+            data,
+            dict
+        ):
+
+            creators = data.get(
+                "creators",
+                []
+            )
+
+            if isinstance(
+                creators,
+                list
+            ):
+
+                return creators
+
+        print(
+            "ERROR: data.json no contiene una lista válida."
+        )
 
         return []
 
     except Exception as error:
 
         print(
-            "Error cargando creators.json:",
+            "ERROR cargando data.json:",
             error
         )
 
@@ -376,12 +392,21 @@ def load_creators():
 # GUARDAR CREADORES
 # ==========================================
 
-def save_creators(creators):
+def save_creators(
+    creators
+):
+
+    temp_file = DATA_FILE + ".tmp"
 
     try:
 
+        os.makedirs(
+            DATA_DIR,
+            exist_ok=True
+        )
+
         with open(
-            CREATORS_FILE,
+            temp_file,
             "w",
             encoding="utf-8"
         ) as file:
@@ -393,29 +418,168 @@ def save_creators(creators):
                 indent=4
             )
 
+            file.flush()
+
+            try:
+
+                os.fsync(
+                    file.fileno()
+                )
+
+            except Exception:
+
+                pass
+
+        os.replace(
+            temp_file,
+            DATA_FILE
+        )
+
+        if not os.path.exists(
+            DATA_FILE
+        ):
+
+            print(
+                "ERROR: data.json no existe después de guardar."
+            )
+
+            return False
+
+        with open(
+            DATA_FILE,
+            "r",
+            encoding="utf-8"
+        ) as file:
+
+            verification = json.load(file)
+
+        if not isinstance(
+            verification,
+            list
+        ):
+
+            print(
+                "ERROR: data.json quedó inválido."
+            )
+
+            return False
+
         return True
 
     except Exception as error:
 
         print(
-            "Error guardando creators.json:",
+            "ERROR GUARDANDO data.json:",
             error
         )
 
+        try:
+
+            if os.path.exists(
+                temp_file
+            ):
+
+                os.remove(
+                    temp_file
+                )
+
+        except Exception:
+
+            pass
+
         return False
+
+
+# ==========================================
+# DETECTAR HASH
+# ==========================================
+
+def is_password_hash(
+    value
+):
+
+    value = str(
+        value or ""
+    )
+
+    return (
+        value.startswith("scrypt:")
+        or value.startswith("pbkdf2:")
+        or value.startswith("argon2:")
+    )
+
+
+# ==========================================
+# VERIFICAR CONTRASEÑA
+# ==========================================
+
+def verify_password(
+    stored_password,
+    entered_password
+):
+
+    stored_password = str(
+        stored_password or ""
+    )
+
+    entered_password = str(
+        entered_password or ""
+    )
+
+    if not stored_password:
+
+        return False
+
+    # ======================================
+    # HASH
+    # ======================================
+
+    if is_password_hash(
+        stored_password
+    ):
+
+        try:
+
+            return check_password_hash(
+                stored_password,
+                entered_password
+            )
+
+        except Exception as error:
+
+            print(
+                "ERROR verificando hash:",
+                error
+            )
+
+            return False
+
+    # ======================================
+    # COMPATIBILIDAD CON CONTRASEÑAS
+    # ANTIGUAS EN TEXTO NORMAL
+    # ======================================
+
+    return (
+        stored_password
+        ==
+        entered_password
+    )
 
 
 # ==========================================
 # NORMALIZAR USUARIO
 # ==========================================
 
-def normalize_handle(value):
+def normalize_handle(
+    value
+):
 
     value = str(
         value or ""
     ).strip()
 
     if not value:
+
         return ""
 
     if "tiktok.com/@" in value:
@@ -424,15 +588,29 @@ def normalize_handle(value):
 
             value = (
                 value
-                .split("tiktok.com/@")[1]
-                .split("?")[0]
-                .split("/")[0]
+                .split(
+                    "tiktok.com/@",
+                    1
+                )[1]
+                .split(
+                    "?",
+                    1
+                )[0]
+                .split(
+                    "/",
+                    1
+                )[0]
             )
 
         except Exception:
+
             pass
 
     value = value.lstrip("@")
+
+    if not value:
+
+        return ""
 
     return "@" + value
 
@@ -441,11 +619,16 @@ def normalize_handle(value):
 # CREAR URL TIKTOK
 # ==========================================
 
-def get_tiktok_url(value):
+def get_tiktok_url(
+    value
+):
 
-    handle = normalize_handle(value)
+    handle = normalize_handle(
+        value
+    )
 
     if not handle:
+
         return ""
 
     username = handle.lstrip("@")
@@ -504,7 +687,6 @@ def login():
     print("Archivo:", ADMIN_FILE)
     print("==========================================")
 
-
     admin_data = load_admin()
 
     if not admin_data:
@@ -513,7 +695,6 @@ def login():
             "No se pudo cargar el usuario administrador.",
             500
         )
-
 
     stored_username = str(
         admin_data.get(
@@ -529,9 +710,8 @@ def login():
         )
     )
 
-
     # ======================================
-    # COMPROBAR USUARIO
+    # USUARIO
     # ======================================
 
     if username != stored_username:
@@ -545,9 +725,8 @@ def login():
             401
         )
 
-
     # ======================================
-    # COMPROBAR CONTRASEÑA
+    # CONTRASEÑA
     # ======================================
 
     password_correct = verify_password(
@@ -555,10 +734,9 @@ def login():
         password
     )
 
-
     # ======================================
-    # SI LA CONTRASEÑA ANTIGUA ESTABA
-    # EN TEXTO NORMAL, CONVERTIRLA A HASH
+    # CONVERTIR CONTRASEÑA ANTIGUA
+    # A HASH
     # ======================================
 
     if (
@@ -577,7 +755,6 @@ def login():
         save_admin(
             admin_data
         )
-
 
     # ======================================
     # LOGIN CORRECTO
@@ -598,7 +775,6 @@ def login():
         return redirect(
             url_for("index")
         )
-
 
     # ======================================
     # LOGIN INCORRECTO
@@ -629,7 +805,6 @@ def change_password():
     print("CAMBIO DE CONTRASEÑA")
     print("==========================================")
 
-
     # ======================================
     # SOLO ADMIN
     # ======================================
@@ -639,15 +814,11 @@ def change_password():
         False
     ):
 
-        print(
-            "ERROR: sesión no autorizada"
-        )
-
         return jsonify({
             "success": False,
-            "error": "No autorizado. Inicia sesión nuevamente."
+            "error":
+                "No autorizado. Inicia sesión nuevamente."
         }), 401
-
 
     # ======================================
     # RECIBIR DATOS
@@ -668,17 +839,20 @@ def change_password():
         ""
     )
 
-
-    # También aceptar JSON por si el frontend
-    # cambia posteriormente a JSON.
+    # ======================================
+    # ACEPTAR JSON
+    # ======================================
 
     if request.is_json:
 
         try:
 
-            json_data = request.get_json(
-                silent=True
-            ) or {}
+            json_data = (
+                request.get_json(
+                    silent=True
+                )
+                or {}
+            )
 
             current_password = json_data.get(
                 "current_password",
@@ -702,7 +876,6 @@ def change_password():
                 error
             )
 
-
     current_password = str(
         current_password or ""
     )
@@ -715,25 +888,8 @@ def change_password():
         confirm_password or ""
     )
 
-
-    print(
-        "Contraseña actual recibida:",
-        bool(current_password)
-    )
-
-    print(
-        "Nueva contraseña recibida:",
-        bool(new_password)
-    )
-
-    print(
-        "Confirmación recibida:",
-        bool(confirm_password)
-    )
-
-
     # ======================================
-    # VALIDAR QUE SE RECIBIÓ LA NUEVA
+    # VALIDACIONES
     # ======================================
 
     if not new_password:
@@ -744,7 +900,6 @@ def change_password():
                 "La nueva contraseña no puede estar vacía."
         }), 400
 
-
     if len(new_password) < 6:
 
         return jsonify({
@@ -753,11 +908,6 @@ def change_password():
                 "La contraseña debe tener al menos 6 caracteres."
         }), 400
 
-
-    # ======================================
-    # CONFIRMAR NUEVA CONTRASEÑA
-    # ======================================
-
     if new_password != confirm_password:
 
         return jsonify({
@@ -765,7 +915,6 @@ def change_password():
             "error":
                 "Las contraseñas nuevas no coinciden."
         }), 400
-
 
     # ======================================
     # CARGAR ADMIN
@@ -781,14 +930,12 @@ def change_password():
                 "No se pudo cargar data/admin.json."
         }), 500
 
-
     stored_password = str(
         admin_data.get(
             "password",
             ""
         )
     )
-
 
     # ======================================
     # COMPROBAR CONTRASEÑA ACTUAL
@@ -801,12 +948,7 @@ def change_password():
         )
     )
 
-
     if not current_password_correct:
-
-        print(
-            "ERROR: contraseña actual incorrecta"
-        )
 
         return jsonify({
             "success": False,
@@ -814,20 +956,8 @@ def change_password():
                 "La contraseña actual es incorrecta."
         }), 400
 
-
     # ======================================
-    # GENERAR NUEVO HASH
-    # ======================================
-
-    new_password_hash = (
-        generate_password_hash(
-            new_password
-        )
-    )
-
-
-    # ======================================
-    # ACTUALIZAR DATOS
+    # NUEVO HASH
     # ======================================
 
     admin_data["username"] = str(
@@ -838,12 +968,13 @@ def change_password():
     ).strip()
 
     admin_data["password"] = (
-        new_password_hash
+        generate_password_hash(
+            new_password
+        )
     )
 
-
     # ======================================
-    # GUARDAR REALMENTE
+    # GUARDAR
     # ======================================
 
     saved = save_admin(
@@ -852,20 +983,15 @@ def change_password():
 
     if not saved:
 
-        print(
-            "ERROR: no se pudo guardar admin.json"
-        )
-
         return jsonify({
             "success": False,
             "error":
-                "No se pudo guardar la nueva contraseña en data/admin.json."
+                "No se pudo guardar la nueva contraseña en admin.json."
         }), 500
 
-
     # ======================================
-    # VERIFICAR ARCHIVO DESDE DISCO
-    # ==========================================
+    # VERIFICAR DESDE DISCO
+    # ======================================
 
     verify_data = load_admin()
 
@@ -874,9 +1000,8 @@ def change_password():
         return jsonify({
             "success": False,
             "error":
-                "La contraseña fue escrita pero no se pudo volver a leer admin.json."
+                "No se pudo volver a leer admin.json."
         }), 500
-
 
     verify_hash = str(
         verify_data.get(
@@ -885,22 +1010,12 @@ def change_password():
         )
     )
 
-
-    # ======================================
-    # VERIFICACIÓN REAL
-    # ======================================
-
     verified = verify_password(
         verify_hash,
         new_password
     )
 
-
     if not verified:
-
-        print(
-            "ERROR: la contraseña no pasó la verificación."
-        )
 
         return jsonify({
             "success": False,
@@ -908,13 +1023,7 @@ def change_password():
                 "La contraseña no pudo verificarse después de guardarla."
         }), 500
 
-
-    # ======================================
-    # ASEGURAR SESIÓN
-    # ======================================
-
     session["admin"] = True
-
 
     print()
     print("==========================================")
@@ -923,11 +1032,6 @@ def change_password():
     print(ADMIN_FILE)
     print("==========================================")
     print()
-
-
-    # ======================================
-    # RESPUESTA FINAL
-    # ======================================
 
     return jsonify({
         "success": True,
@@ -964,16 +1068,15 @@ def logout():
 def add_creator():
 
     if not session.get(
-        "admin"
+        "admin",
+        False
     ):
 
         return jsonify({
             "error": "No autorizado"
         }), 403
 
-
     creators = load_creators()
-
 
     # ======================================
     # FOTO
@@ -996,7 +1099,7 @@ def add_creator():
 
         extension = os.path.splitext(
             original_name
-        )[1]
+        )[1].lower()
 
         filename = (
             str(uuid.uuid4())
@@ -1017,9 +1120,8 @@ def add_creator():
             + filename
         )
 
-
     # ======================================
-    # USUARIO
+    # HANDLE
     # ======================================
 
     handle = normalize_handle(
@@ -1029,13 +1131,11 @@ def add_creator():
         )
     )
 
-
     # ======================================
     # CREADOR
     # ======================================
 
     creator = {
-
         "id": str(
             uuid.uuid4()
         ),
@@ -1134,11 +1234,17 @@ def add_creator():
             photo
     }
 
+    # ======================================
+    # AGREGAR
+    # ======================================
 
     creators.append(
         creator
     )
 
+    # ======================================
+    # GUARDAR EN DATA.JSON
+    # ======================================
 
     if not save_creators(
         creators
@@ -1146,9 +1252,8 @@ def add_creator():
 
         return jsonify({
             "error":
-                "No se pudieron guardar los datos"
+                "No se pudieron guardar los datos en data.json."
         }), 500
-
 
     return jsonify(
         creator
@@ -1163,19 +1268,24 @@ def add_creator():
     "/api/creator/<creator_id>",
     methods=["POST"]
 )
-def edit_creator(creator_id):
+def edit_creator(
+    creator_id
+):
 
     if not session.get(
-        "admin"
+        "admin",
+        False
     ):
 
         return jsonify({
             "error": "No autorizado"
         }), 403
 
-
     creators = load_creators()
 
+    # ======================================
+    # BUSCAR
+    # ======================================
 
     creator = next(
         (
@@ -1186,7 +1296,6 @@ def edit_creator(creator_id):
         None
     )
 
-
     if not creator:
 
         return jsonify({
@@ -1194,9 +1303,8 @@ def edit_creator(creator_id):
                 "Creador no encontrado"
         }), 404
 
-
     # ======================================
-    # ACTUALIZAR USUARIO
+    # HANDLE
     # ======================================
 
     handle = normalize_handle(
@@ -1208,13 +1316,11 @@ def edit_creator(creator_id):
 
     creator["handle"] = handle
 
-
     # ======================================
-    # ACTUALIZAR CAMPOS
+    # CAMPOS
     # ======================================
 
     fields = [
-
         "name",
         "category",
         "country",
@@ -1228,9 +1334,7 @@ def edit_creator(creator_id):
         "average_shares",
         "instagram",
         "youtube"
-
     ]
-
 
     for field in fields:
 
@@ -1241,7 +1345,6 @@ def edit_creator(creator_id):
             ).strip()
         )
 
-
     # ======================================
     # TIKTOK
     # ======================================
@@ -1251,16 +1354,15 @@ def edit_creator(creator_id):
         ""
     ).strip()
 
-
     if not tiktok_value:
 
         tiktok_value = handle
 
-
-    creator["tiktok"] = get_tiktok_url(
-        tiktok_value
+    creator["tiktok"] = (
+        get_tiktok_url(
+            tiktok_value
+        )
     )
-
 
     # ======================================
     # FOTO NUEVA
@@ -1281,7 +1383,7 @@ def edit_creator(creator_id):
 
         extension = os.path.splitext(
             original_name
-        )[1]
+        )[1].lower()
 
         filename = (
             str(uuid.uuid4())
@@ -1302,7 +1404,6 @@ def edit_creator(creator_id):
             + filename
         )
 
-
     # ======================================
     # GUARDAR
     # ======================================
@@ -1313,9 +1414,8 @@ def edit_creator(creator_id):
 
         return jsonify({
             "error":
-                "No se pudieron guardar los cambios"
+                "No se pudieron guardar los cambios en data.json."
         }), 500
-
 
     return jsonify(
         creator
@@ -1330,30 +1430,50 @@ def edit_creator(creator_id):
     "/api/creator/<creator_id>",
     methods=["DELETE"]
 )
-def delete_creator(creator_id):
+def delete_creator(
+    creator_id
+):
 
     if not session.get(
-        "admin"
+        "admin",
+        False
     ):
 
         return jsonify({
             "error": "No autorizado"
         }), 403
 
-
     creators = load_creators()
 
+    # ======================================
+    # COMPROBAR EXISTENCIA
+    # ======================================
+
+    creator_exists = any(
+        creator.get("id") == creator_id
+        for creator in creators
+    )
+
+    if not creator_exists:
+
+        return jsonify({
+            "error":
+                "Creador no encontrado"
+        }), 404
+
+    # ======================================
+    # ELIMINAR
+    # ======================================
 
     new_creators = [
-
         creator
-
         for creator in creators
-
         if creator.get("id") != creator_id
-
     ]
 
+    # ======================================
+    # GUARDAR
+    # ======================================
 
     if not save_creators(
         new_creators
@@ -1361,9 +1481,8 @@ def delete_creator(creator_id):
 
         return jsonify({
             "error":
-                "No se pudo eliminar"
+                "No se pudo eliminar el creador."
         }), 500
-
 
     return jsonify({
         "success": True
@@ -1378,8 +1497,13 @@ if __name__ == "__main__":
 
     print()
     print("==========================================")
-    print(" VERTEX MONTH")
+    print(" VERTEXMONT")
     print("==========================================")
+
+    print("Archivo de creadores:")
+    print(DATA_FILE)
+
+    print()
 
     print("Archivo de administrador:")
     print(ADMIN_FILE)
@@ -1394,6 +1518,7 @@ if __name__ == "__main__":
     print("Contraseña inicial:")
     print(DEFAULT_ADMIN_PASSWORD)
 
+    print()
     print("==========================================")
     print()
 
