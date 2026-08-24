@@ -1,3 +1,4 @@
+
 from flask import (
     Flask,
     render_template,
@@ -9,7 +10,6 @@ from flask import (
 )
 
 import os
-import json
 import uuid
 import requests
 
@@ -21,53 +21,23 @@ from werkzeug.security import (
 from werkzeug.utils import secure_filename
 
 
-# ==========================================
+# ============================================================
 # APP
-# ==========================================
+# ============================================================
 
 app = Flask(__name__)
 
 app.secret_key = os.environ.get(
-    "SECRET_KEY",
+    "FLASK_SECRET_KEY",
     "vertex_month_secret_2026_change_this"
 )
 
 app.permanent_session_lifetime = 60 * 60 * 24 * 7
 
 
-# ==========================================
-# CARPETAS LOCALES
-# ==========================================
-
-BASE_DIR = os.path.abspath(
-    os.path.dirname(__file__)
-)
-
-DATA_DIR = os.path.join(
-    BASE_DIR,
-    "data"
-)
-
-UPLOAD_FOLDER = os.path.join(
-    BASE_DIR,
-    "static",
-    "uploads"
-)
-
-os.makedirs(
-    DATA_DIR,
-    exist_ok=True
-)
-
-os.makedirs(
-    UPLOAD_FOLDER,
-    exist_ok=True
-)
-
-
-# ==========================================
+# ============================================================
 # SUPABASE
-# ==========================================
+# ============================================================
 
 SUPABASE_URL = os.environ.get(
     "SUPABASE_URL",
@@ -84,47 +54,41 @@ SUPABASE_STORAGE_BUCKET = os.environ.get(
     "creator-photos"
 )
 
-CREATORS_TABLE = "creators"
-ADMIN_TABLE = "admin"
-
-
-# ==========================================
-# ARCHIVOS LOCALES DE RESPALDO
-# ==========================================
-
-DATA_FILE = os.path.join(
-    DATA_DIR,
-    "data.json"
+CREATORS_TABLE = os.environ.get(
+    "SUPABASE_CREATORS_TABLE",
+    "creators"
 )
 
-ADMIN_FILE = os.path.join(
-    DATA_DIR,
-    "admin.json"
+ADMIN_TABLE = os.environ.get(
+    "SUPABASE_ADMIN_TABLE",
+    "admin"
 )
 
 
-# ==========================================
+# ============================================================
 # ADMIN
-# ==========================================
+# ============================================================
 
 ADMIN_USERNAME = "admin"
 DEFAULT_ADMIN_PASSWORD = "admin123"
 
 
-# ==========================================
-# COMPROBAR SUPABASE
-# ==========================================
+# ============================================================
+# VALIDAR CONFIGURACIÓN
+# ============================================================
 
 def supabase_configured():
-
     return bool(
         SUPABASE_URL
         and SUPABASE_KEY
     )
 
 
-def supabase_headers():
+# ============================================================
+# HEADERS SUPABASE
+# ============================================================
 
+def supabase_headers():
     return {
         "apikey": SUPABASE_KEY,
         "Authorization": f"Bearer {SUPABASE_KEY}",
@@ -132,162 +96,113 @@ def supabase_headers():
     }
 
 
-def supabase_storage_headers():
+# ============================================================
+# URL TABLA SUPABASE
+# ============================================================
 
-    return {
-        "apikey": SUPABASE_KEY,
-        "Authorization": f"Bearer {SUPABASE_KEY}"
-    }
-
-
-# ==========================================
-# SUPABASE REQUEST
-# ==========================================
-
-def supabase_request(
-    method,
-    endpoint,
-    **kwargs
-):
-
-    if not supabase_configured():
-
-        raise Exception(
-            "SUPABASE_URL o SUPABASE_KEY no están configuradas."
-        )
-
-    url = (
-        SUPABASE_URL
-        + endpoint
+def table_url(table_name):
+    return (
+        f"{SUPABASE_URL}/rest/v1/{table_name}"
     )
 
-    headers = kwargs.pop(
-        "headers",
-        {}
-    )
 
-    final_headers = supabase_headers()
+# ============================================================
+# ERROR SUPABASE
+# ============================================================
 
-    final_headers.update(
-        headers
-    )
-
-    response = requests.request(
-        method,
-        url,
-        headers=final_headers,
-        timeout=30,
-        **kwargs
-    )
-
-    if not response.ok:
-
-        raise Exception(
-            f"Supabase HTTP {response.status_code}: "
-            f"{response.text}"
-        )
-
-    if not response.text:
-
-        return None
-
+def supabase_error(response):
     try:
-
-        return response.json()
-
-    except Exception:
-
         return response.text
+    except Exception:
+        return "Error desconocido de Supabase."
 
 
-# ==========================================
-# CREAR DATA.JSON LOCAL SI NO EXISTE
-# ==========================================
+# ============================================================
+# GET CREADORES
+# ============================================================
 
-if not os.path.exists(DATA_FILE):
+def load_creators():
+    if not supabase_configured():
+        print("ERROR: Supabase no está configurado.")
+        return []
 
     try:
+        response = requests.get(
+            table_url(CREATORS_TABLE),
+            headers={
+                **supabase_headers(),
+                "Accept": "application/json"
+            },
+            params={
+                "select": "*",
+                "order": "name.asc"
+            },
+            timeout=20
+        )
 
-        with open(
-            DATA_FILE,
-            "w",
-            encoding="utf-8"
-        ) as file:
-
-            json.dump(
-                [],
-                file,
-                ensure_ascii=False,
-                indent=4
+        if not response.ok:
+            print(
+                "ERROR cargando creadores:",
+                response.status_code,
+                response.text
             )
+            return []
+
+        data = response.json()
+
+        if not isinstance(data, list):
+            print(
+                "ERROR: Supabase no devolvió una lista de creadores."
+            )
+            return []
+
+        return data
 
     except Exception as error:
-
         print(
-            "ERROR creando data.json:",
+            "ERROR conectando con Supabase:",
             error
         )
+        return []
 
 
-# ==========================================
+# ============================================================
 # NORMALIZAR HANDLE
-# ==========================================
+# ============================================================
 
 def normalize_handle(value):
-
-    value = str(
-        value or ""
-    ).strip()
+    value = str(value or "").strip()
 
     if not value:
-
         return ""
 
     if "tiktok.com/@" in value:
-
         try:
-
             value = (
                 value
-                .split(
-                    "tiktok.com/@",
-                    1
-                )[1]
-                .split(
-                    "?",
-                    1
-                )[0]
-                .split(
-                    "/",
-                    1
-                )[0]
+                .split("tiktok.com/@", 1)[1]
+                .split("?", 1)[0]
+                .split("/", 1)[0]
             )
-
         except Exception:
-
             pass
 
     value = value.lstrip("@")
 
     if not value:
-
         return ""
 
     return "@" + value
 
 
-# ==========================================
-# CREAR URL TIKTOK
-# ==========================================
+# ============================================================
+# URL TIKTOK
+# ============================================================
 
 def get_tiktok_url(value):
-
-    handle = normalize_handle(
-        value
-    )
+    handle = normalize_handle(value)
 
     if not handle:
-
         return ""
 
     username = handle.lstrip("@")
@@ -298,15 +213,12 @@ def get_tiktok_url(value):
     )
 
 
-# ==========================================
-# DETECTAR HASH
-# ==========================================
+# ============================================================
+# PASSWORD HASH
+# ============================================================
 
 def is_password_hash(value):
-
-    value = str(
-        value or ""
-    )
+    value = str(value or "")
 
     return (
         value.startswith("scrypt:")
@@ -315,15 +227,14 @@ def is_password_hash(value):
     )
 
 
-# ==========================================
-# VERIFICAR CONTRASEÑA
-# ==========================================
+# ============================================================
+# VERIFICAR PASSWORD
+# ============================================================
 
 def verify_password(
     stored_password,
     entered_password
 ):
-
     stored_password = str(
         stored_password or ""
     )
@@ -333,340 +244,148 @@ def verify_password(
     )
 
     if not stored_password:
-
         return False
 
-    if is_password_hash(
-        stored_password
-    ):
-
+    if is_password_hash(stored_password):
         try:
-
             return check_password_hash(
                 stored_password,
                 entered_password
             )
-
         except Exception as error:
-
             print(
                 "ERROR verificando hash:",
                 error
             )
-
             return False
 
-    return (
-        stored_password
-        ==
-        entered_password
-    )
+    # Compatibilidad con contraseña antigua
+    return stored_password == entered_password
 
 
-# ==========================================
-# ADMIN - SUPABASE
-# ==========================================
+# ============================================================
+# CARGAR ADMIN
+# ============================================================
 
 def load_admin():
+    if not supabase_configured():
+        print(
+            "ERROR: Supabase no está configurado."
+        )
+        return None
 
     try:
-
-        if supabase_configured():
-
-            data = supabase_request(
-                "GET",
-                f"/rest/v1/{ADMIN_TABLE}"
-                "?select=*"
-                "&limit=1"
-            )
-
-            if isinstance(
-                data,
-                list
-            ) and data:
-
-                return data[0]
-
-            return None
-
-        # ----------------------------------
-        # RESPALDO LOCAL
-        # ----------------------------------
-
-        if not os.path.exists(
-            ADMIN_FILE
-        ):
-
-            admin_data = {
-                "username": ADMIN_USERNAME,
-                "password":
-                    generate_password_hash(
-                        DEFAULT_ADMIN_PASSWORD
-                    )
-            }
-
-            save_admin(
-                admin_data
-            )
-
-            return admin_data
-
-        with open(
-            ADMIN_FILE,
-            "r",
-            encoding="utf-8"
-        ) as file:
-
-            return json.load(file)
-
-    except Exception as error:
-
-        print(
-            "ERROR cargando administrador:",
-            error
+        response = requests.get(
+            table_url(ADMIN_TABLE),
+            headers={
+                **supabase_headers(),
+                "Accept": "application/json"
+            },
+            params={
+                "select": "*",
+                "username": f"eq.{ADMIN_USERNAME}",
+                "limit": "1"
+            },
+            timeout=20
         )
 
+        if not response.ok:
+            print(
+                "ERROR cargando admin:",
+                response.status_code,
+                response.text
+            )
+            return None
+
+        data = response.json()
+
+        if not data:
+            return None
+
+        return data[0]
+
+    except Exception as error:
+        print(
+            "ERROR conectando con tabla admin:",
+            error
+        )
         return None
 
 
-# ==========================================
-# ADMIN - GUARDAR
-# ==========================================
+# ============================================================
+# GUARDAR PASSWORD ADMIN
+# ============================================================
 
-def save_admin(admin_data):
+def save_admin_password(new_password):
+    admin_data = load_admin()
+
+    if not admin_data:
+        return False
+
+    admin_id = admin_data.get("id")
+
+    password_hash = generate_password_hash(
+        new_password
+    )
 
     try:
-
-        if supabase_configured():
-
-            existing = supabase_request(
-                "GET",
-                f"/rest/v1/{ADMIN_TABLE}"
-                "?select=id"
-                "&limit=1"
-            )
-
-            if (
-                isinstance(existing, list)
-                and existing
-            ):
-
-                admin_id = existing[0]["id"]
-
-                supabase_request(
-                    "PATCH",
-                    f"/rest/v1/{ADMIN_TABLE}"
-                    f"?id=eq.{admin_id}",
-                    json={
-                        "username":
-                            admin_data.get(
-                                "username",
-                                ADMIN_USERNAME
-                            ),
-                        "password":
-                            admin_data.get(
-                                "password",
-                                ""
-                            )
-                    }
-                )
-
-            else:
-
-                supabase_request(
-                    "POST",
-                    f"/rest/v1/{ADMIN_TABLE}",
-                    json={
-                        "username":
-                            admin_data.get(
-                                "username",
-                                ADMIN_USERNAME
-                            ),
-                        "password":
-                            admin_data.get(
-                                "password",
-                                ""
-                            )
-                    }
-                )
-
-            return True
-
-        # ----------------------------------
-        # RESPALDO LOCAL
-        # ----------------------------------
-
-        temp_file = ADMIN_FILE + ".tmp"
-
-        with open(
-            temp_file,
-            "w",
-            encoding="utf-8"
-        ) as file:
-
-            json.dump(
-                admin_data,
-                file,
-                ensure_ascii=False,
-                indent=4
-            )
-
-            file.flush()
-
-        os.replace(
-            temp_file,
-            ADMIN_FILE
+        response = requests.patch(
+            table_url(ADMIN_TABLE),
+            headers={
+                **supabase_headers(),
+                "Prefer": "return=representation"
+            },
+            params={
+                "id": f"eq.{admin_id}"
+            },
+            json={
+                "password": password_hash
+            },
+            timeout=20
         )
+
+        if not response.ok:
+            print(
+                "ERROR guardando contraseña:",
+                response.status_code,
+                response.text
+            )
+            return False
 
         return True
 
     except Exception as error:
-
         print(
-            "ERROR GUARDANDO ADMIN:",
+            "ERROR actualizando contraseña:",
             error
         )
-
         return False
 
 
-# ==========================================
-# CREADORES - SUPABASE
-# ==========================================
+# ============================================================
+# STORAGE — URL PÚBLICA
+# ============================================================
 
-def load_creators():
-
-    try:
-
-        if supabase_configured():
-
-            data = supabase_request(
-                "GET",
-                f"/rest/v1/{CREATORS_TABLE}"
-                "?select=*"
-                "&order=name.asc"
-            )
-
-            if isinstance(
-                data,
-                list
-            ):
-
-                return data
-
-            return []
-
-        # ----------------------------------
-        # RESPALDO LOCAL
-        # ----------------------------------
-
-        if not os.path.exists(
-            DATA_FILE
-        ):
-
-            return []
-
-        with open(
-            DATA_FILE,
-            "r",
-            encoding="utf-8"
-        ) as file:
-
-            data = json.load(file)
-
-        if isinstance(
-            data,
-            list
-        ):
-
-            return data
-
-        if isinstance(
-            data,
-            dict
-        ):
-
-            creators = data.get(
-                "creators",
-                []
-            )
-
-            if isinstance(
-                creators,
-                list
-            ):
-
-                return creators
-
-        return []
-
-    except Exception as error:
-
-        print(
-            "ERROR cargando creadores:",
-            error
-        )
-
-        return []
-
-
-# ==========================================
-# GUARDAR CREADORES LOCAL
-# ==========================================
-
-def save_creators(creators):
-
-    try:
-
-        temp_file = DATA_FILE + ".tmp"
-
-        with open(
-            temp_file,
-            "w",
-            encoding="utf-8"
-        ) as file:
-
-            json.dump(
-                creators,
-                file,
-                ensure_ascii=False,
-                indent=4
-            )
-
-            file.flush()
-
-        os.replace(
-            temp_file,
-            DATA_FILE
-        )
-
-        return True
-
-    except Exception as error:
-
-        print(
-            "ERROR GUARDANDO data.json:",
-            error
-        )
-
-        return False
-
-
-# ==========================================
-# SUPABASE STORAGE
-# ==========================================
-
-def upload_photo_to_supabase(file):
-
-    if not file or not file.filename:
-
+def storage_public_url(path):
+    if not path:
         return ""
 
-    if not supabase_configured():
+    return (
+        f"{SUPABASE_URL}/storage/v1/object/public/"
+        f"{SUPABASE_STORAGE_BUCKET}/{path}"
+    )
 
-        raise Exception(
-            "Supabase no está configurado."
-        )
+
+# ============================================================
+# STORAGE — SUBIR FOTO
+# ============================================================
+
+def upload_photo(file):
+    if not file:
+        return ""
+
+    if not file.filename:
+        return ""
 
     original_name = secure_filename(
         file.filename
@@ -676,110 +395,98 @@ def upload_photo_to_supabase(file):
         original_name
     )[1].lower()
 
+    allowed_extensions = {
+        ".jpg",
+        ".jpeg",
+        ".png",
+        ".webp"
+    }
+
+    if extension not in allowed_extensions:
+        raise ValueError(
+            "Formato de imagen no permitido. "
+            "Usa JPG, JPEG, PNG o WEBP."
+        )
+
+    # UUID para evitar colisiones
     filename = (
         str(uuid.uuid4())
         + extension
     )
 
-    storage_path = filename
-
-    file_content = file.read()
-
-    if not file_content:
-
-        raise Exception(
-            "La imagen está vacía."
-        )
-
-    content_type = (
-        file.content_type
-        or "application/octet-stream"
+    storage_path = (
+        "creators/"
+        + filename
     )
 
-    url = (
-        SUPABASE_URL
-        + "/storage/v1/object/"
-        + SUPABASE_STORAGE_BUCKET
-        + "/"
-        + storage_path
+    upload_url = (
+        f"{SUPABASE_URL}/storage/v1/object/"
+        f"{SUPABASE_STORAGE_BUCKET}/"
+        f"{storage_path}"
     )
 
-    headers = supabase_storage_headers()
+    content_type = file.content_type
 
-    headers["Content-Type"] = content_type
+    if not content_type:
+        content_type = "application/octet-stream"
 
-    headers["x-upsert"] = "false"
-
-    response = requests.post(
-        url,
-        headers=headers,
-        data=file_content,
-        timeout=60
-    )
-
-    if not response.ok:
-
-        raise Exception(
-            f"No se pudo subir la foto: "
-            f"HTTP {response.status_code}: "
-            f"{response.text}"
-        )
-
-    public_url = (
-        SUPABASE_URL
-        + "/storage/v1/object/public/"
-        + SUPABASE_STORAGE_BUCKET
-        + "/"
-        + storage_path
-    )
-
-    return public_url
-
-
-# ==========================================
-# ELIMINAR FOTO DE SUPABASE
-# ==========================================
-
-def delete_photo_from_supabase(photo_url):
-
-    if not photo_url:
-
-        return True
-
-    if not supabase_configured():
-
-        return True
-
-    marker = (
-        "/storage/v1/object/public/"
-        + SUPABASE_STORAGE_BUCKET
-        + "/"
-    )
-
-    if marker not in photo_url:
-
-        return True
-
-    storage_path = photo_url.split(
-        marker,
-        1
-    )[1]
-
-    url = (
-        SUPABASE_URL
-        + "/storage/v1/object/"
-        + SUPABASE_STORAGE_BUCKET
-    )
+    headers = {
+        "Authorization": f"Bearer {SUPABASE_KEY}",
+        "apikey": SUPABASE_KEY,
+        "Content-Type": content_type,
+        "x-upsert": "false"
+    }
 
     try:
+        file.stream.seek(0)
 
+        response = requests.post(
+            upload_url,
+            headers=headers,
+            data=file.stream,
+            timeout=60
+        )
+
+        if not response.ok:
+            raise RuntimeError(
+                "Supabase Storage "
+                f"{response.status_code}: "
+                f"{response.text}"
+            )
+
+        return storage_path
+
+    except Exception as error:
+        print(
+            "ERROR subiendo foto:",
+            error
+        )
+        raise
+
+
+# ============================================================
+# STORAGE — ELIMINAR FOTO
+# ============================================================
+
+def delete_photo(storage_path):
+    if not storage_path:
+        return True
+
+    delete_url = (
+        f"{SUPABASE_URL}/storage/v1/object/"
+        f"{SUPABASE_STORAGE_BUCKET}"
+    )
+
+    headers = {
+        "Authorization": f"Bearer {SUPABASE_KEY}",
+        "apikey": SUPABASE_KEY,
+        "Content-Type": "application/json"
+    }
+
+    try:
         response = requests.delete(
-            url,
-            headers={
-                **supabase_storage_headers(),
-                "Content-Type":
-                    "application/json"
-            },
+            delete_url,
+            headers=headers,
             json={
                 "prefixes": [
                     storage_path
@@ -788,30 +495,124 @@ def delete_photo_from_supabase(photo_url):
             timeout=30
         )
 
-        if response.ok:
+        if not response.ok:
+            print(
+                "AVISO: no se pudo eliminar "
+                "la foto antigua:",
+                response.text
+            )
+            return False
 
-            return True
-
-        print(
-            "No se pudo eliminar foto:",
-            response.text
-        )
-
-        return False
+        return True
 
     except Exception as error:
-
         print(
-            "ERROR eliminando foto:",
+            "AVISO eliminando foto:",
             error
         )
-
         return False
 
 
-# ==========================================
+# ============================================================
+# OBTENER IDENTIFICADOR DEL CREADOR
+# ============================================================
+
+def find_creator_filter(creator_id):
+    """
+    Permite trabajar tanto con:
+    - id bigint
+    - creator_uuid uuid
+
+    Así no rompemos los creadores existentes.
+    """
+
+    creator_id = str(
+        creator_id or ""
+    ).strip()
+
+    if not creator_id:
+        return None
+
+    # UUID
+    try:
+        uuid.UUID(creator_id)
+
+        return {
+            "creator_uuid": creator_id
+        }
+
+    except ValueError:
+        pass
+
+    # bigint
+    try:
+        int(creator_id)
+
+        return {
+            "id": creator_id
+        }
+
+    except ValueError:
+        return None
+
+
+# ============================================================
+# BUSCAR CREADOR
+# ============================================================
+
+def get_creator(creator_id):
+    creator_filter = find_creator_filter(
+        creator_id
+    )
+
+    if not creator_filter:
+        return None
+
+    column, value = next(
+        iter(creator_filter.items())
+    )
+
+    try:
+        response = requests.get(
+            table_url(CREATORS_TABLE),
+            headers={
+                **supabase_headers(),
+                "Accept": "application/json"
+            },
+            params={
+                "select": "*",
+                column: f"eq.{value}",
+                "limit": "1"
+            },
+            timeout=20
+        )
+
+        if not response.ok:
+            print(
+                "ERROR buscando creador:",
+                response.status_code,
+                response.text
+            )
+            return None
+
+        data = response.json()
+
+        if not data:
+            return None
+
+        return data[0]
+
+    except Exception as error:
+        print(
+            "ERROR buscando creador:",
+            error
+        )
+        return None
+
+
+# ============================================================
 # INICIO
-# ==========================================
+# ============================================================
 
 @app.route("/")
 def index():
@@ -830,9 +631,9 @@ def index():
     )
 
 
-# ==========================================
+# ============================================================
 # LOGIN
-# ==========================================
+# ============================================================
 
 @app.route(
     "/login",
@@ -850,12 +651,17 @@ def login():
         ""
     )
 
+    print()
+    print("==========================================")
+    print("INTENTO DE LOGIN")
+    print("Usuario:", username)
+    print("==========================================")
+
     admin_data = load_admin()
 
     if not admin_data:
-
         return (
-            "No se pudo cargar el usuario administrador.",
+            "No se pudo cargar el administrador desde Supabase.",
             500
         )
 
@@ -874,6 +680,9 @@ def login():
     )
 
     if username != stored_username:
+        print(
+            "LOGIN FALLIDO: usuario incorrecto"
+        )
 
         return (
             "Usuario o contraseña incorrectos",
@@ -885,6 +694,7 @@ def login():
         password
     )
 
+    # Convertir contraseña antigua a hash
     if (
         password_correct
         and not is_password_hash(
@@ -892,14 +702,8 @@ def login():
         )
     ):
 
-        admin_data["password"] = (
-            generate_password_hash(
-                password
-            )
-        )
-
-        save_admin(
-            admin_data
+        save_admin_password(
+            password
         )
 
     if password_correct:
@@ -910,9 +714,17 @@ def login():
 
         session.permanent = True
 
+        print(
+            "LOGIN CORRECTO"
+        )
+
         return redirect(
             url_for("index")
         )
+
+    print(
+        "LOGIN FALLIDO: contraseña incorrecta"
+    )
 
     return (
         "Usuario o contraseña incorrectos",
@@ -920,9 +732,9 @@ def login():
     )
 
 
-# ==========================================
+# ============================================================
 # CAMBIAR CONTRASEÑA
-# ==========================================
+# ============================================================
 
 @app.route(
     "/change-password",
@@ -934,7 +746,6 @@ def change_password():
         "admin",
         False
     ):
-
         return jsonify({
             "success": False,
             "error":
@@ -993,7 +804,6 @@ def change_password():
     )
 
     if not new_password:
-
         return jsonify({
             "success": False,
             "error":
@@ -1001,7 +811,6 @@ def change_password():
         }), 400
 
     if len(new_password) < 6:
-
         return jsonify({
             "success": False,
             "error":
@@ -1009,7 +818,6 @@ def change_password():
         }), 400
 
     if new_password != confirm_password:
-
         return jsonify({
             "success": False,
             "error":
@@ -1019,7 +827,6 @@ def change_password():
     admin_data = load_admin()
 
     if not admin_data:
-
         return jsonify({
             "success": False,
             "error":
@@ -1037,54 +844,42 @@ def change_password():
         stored_password,
         current_password
     ):
-
         return jsonify({
             "success": False,
             "error":
                 "La contraseña actual es incorrecta."
         }), 400
 
-    admin_data["username"] = str(
-        admin_data.get(
-            "username",
-            ADMIN_USERNAME
-        )
-    ).strip()
-
-    admin_data["password"] = (
-        generate_password_hash(
-            new_password
-        )
+    saved = save_admin_password(
+        new_password
     )
 
-    if not save_admin(
-        admin_data
-    ):
-
+    if not saved:
         return jsonify({
             "success": False,
             "error":
                 "No se pudo guardar la nueva contraseña."
         }), 500
 
+    # Verificación
     verify_data = load_admin()
 
     if not verify_data:
-
         return jsonify({
             "success": False,
             "error":
                 "No se pudo verificar la contraseña."
         }), 500
 
-    if not verify_password(
+    verified = verify_password(
         verify_data.get(
             "password",
             ""
         ),
         new_password
-    ):
+    )
 
+    if not verified:
         return jsonify({
             "success": False,
             "error":
@@ -1100,9 +895,9 @@ def change_password():
     })
 
 
-# ==========================================
+# ============================================================
 # LOGOUT
-# ==========================================
+# ============================================================
 
 @app.route(
     "/logout",
@@ -1117,9 +912,9 @@ def logout():
     )
 
 
-# ==========================================
+# ============================================================
 # AGREGAR CREADOR
-# ==========================================
+# ============================================================
 
 @app.route(
     "/api/creator",
@@ -1131,476 +926,527 @@ def add_creator():
         "admin",
         False
     ):
-
         return jsonify({
             "error": "No autorizado"
         }), 403
 
+    # ========================================================
+    # UUID PROPIO
+    #
+    # IMPORTANTE:
+    # NO enviamos "id".
+    #
+    # Supabase genera automáticamente el id bigint.
+    # Python genera creator_uuid.
+    # ========================================================
+
+    creator_uuid = str(
+        uuid.uuid4()
+    )
+
+    # ========================================================
+    # FOTO
+    # ========================================================
+
+    photo_url = ""
+
+    photo_storage_path = ""
+
     try:
-
-        handle = normalize_handle(
-            request.form.get(
-                "handle",
-                ""
-            )
-        )
-
-        photo_url = ""
-
-        # ==================================
-        # SUBIR FOTO A SUPABASE
-        # ==================================
 
         if (
             "photo" in request.files
             and request.files["photo"].filename
         ):
 
-            photo_url = (
-                upload_photo_to_supabase(
-                    request.files["photo"]
-                )
+            photo_storage_path = upload_photo(
+                request.files["photo"]
             )
 
-        creator = {
-
-            "id":
-                str(uuid.uuid4()),
-
-            "name":
-                request.form.get(
-                    "name",
-                    ""
-                ).strip(),
-
-            "handle":
-                handle,
-
-            "category":
-                request.form.get(
-                    "category",
-                    ""
-                ).strip(),
-
-            "country":
-                request.form.get(
-                    "country",
-                    ""
-                ).strip(),
-
-            "followers":
-                request.form.get(
-                    "followers",
-                    ""
-                ).strip(),
-
-            "likes":
-                request.form.get(
-                    "likes",
-                    ""
-                ).strip(),
-
-            "views":
-                request.form.get(
-                    "views",
-                    ""
-                ).strip(),
-
-            "videos":
-                request.form.get(
-                    "videos",
-                    ""
-                ).strip(),
-
-            "engagement":
-                request.form.get(
-                    "engagement",
-                    ""
-                ).strip(),
-
-            "average_likes":
-                request.form.get(
-                    "average_likes",
-                    ""
-                ).strip(),
-
-            "average_comments":
-                request.form.get(
-                    "average_comments",
-                    ""
-                ).strip(),
-
-            "average_shares":
-                request.form.get(
-                    "average_shares",
-                    ""
-                ).strip(),
-
-            "tiktok":
-                get_tiktok_url(
-                    request.form.get(
-                        "tiktok",
-                        ""
-                    )
-                    or handle
-                ),
-
-            "instagram":
-                request.form.get(
-                    "instagram",
-                    ""
-                ).strip(),
-
-            "youtube":
-                request.form.get(
-                    "youtube",
-                    ""
-                ).strip(),
-
-            "photo":
-                photo_url
-        }
-
-        # ==================================
-        # SUPABASE
-        # ==================================
-
-        if supabase_configured():
-
-            result = supabase_request(
-                "POST",
-                f"/rest/v1/{CREATORS_TABLE}",
-                headers={
-                    "Prefer":
-                        "return=representation"
-                },
-                json=creator
+            photo_url = storage_public_url(
+                photo_storage_path
             )
-
-            if (
-                isinstance(result, list)
-                and result
-            ):
-
-                return jsonify(
-                    result[0]
-                )
-
-            return jsonify(
-                creator
-            )
-
-        # ==================================
-        # LOCAL
-        # ==================================
-
-        creators = load_creators()
-
-        creators.append(
-            creator
-        )
-
-        if not save_creators(
-            creators
-        ):
-
-            return jsonify({
-                "error":
-                    "No se pudieron guardar los datos."
-            }), 500
-
-        return jsonify(
-            creator
-        )
 
     except Exception as error:
 
-        print(
-            "ERROR agregando creador:",
-            error
+        return jsonify({
+            "error":
+                f"No se pudo subir la foto: {error}"
+        }), 500
+
+    # ========================================================
+    # HANDLE
+    # ========================================================
+
+    handle = normalize_handle(
+        request.form.get(
+            "handle",
+            ""
         )
+    )
+
+    # ========================================================
+    # DATOS
+    # ========================================================
+
+    creator = {
+
+        # UUID
+        "creator_uuid":
+            creator_uuid,
+
+        "name":
+            request.form.get(
+                "name",
+                ""
+            ).strip(),
+
+        "handle":
+            handle,
+
+        "category":
+            request.form.get(
+                "category",
+                ""
+            ).strip(),
+
+        "country":
+            request.form.get(
+                "country",
+                ""
+            ).strip(),
+
+        "followers":
+            request.form.get(
+                "followers",
+                ""
+            ).strip(),
+
+        "likes":
+            request.form.get(
+                "likes",
+                ""
+            ).strip(),
+
+        "views":
+            request.form.get(
+                "views",
+                ""
+            ).strip(),
+
+        "videos":
+            request.form.get(
+                "videos",
+                ""
+            ).strip(),
+
+        "engagement":
+            request.form.get(
+                "engagement",
+                ""
+            ).strip(),
+
+        "average_likes":
+            request.form.get(
+                "average_likes",
+                ""
+            ).strip(),
+
+        "average_comments":
+            request.form.get(
+                "average_comments",
+                ""
+            ).strip(),
+
+        "average_shares":
+            request.form.get(
+                "average_shares",
+                ""
+            ).strip(),
+
+        "tiktok":
+            get_tiktok_url(
+                request.form.get(
+                    "tiktok",
+                    ""
+                )
+                or handle
+            ),
+
+        "instagram":
+            request.form.get(
+                "instagram",
+                ""
+            ).strip(),
+
+        "youtube":
+            request.form.get(
+                "youtube",
+                ""
+            ).strip(),
+
+        "photo":
+            photo_url,
+
+        "photo_storage_path":
+            photo_storage_path
+    }
+
+    # ========================================================
+    # GUARDAR EN SUPABASE
+    #
+    # NOTA:
+    # "id" NO aparece aquí.
+    # Supabase genera el bigint automáticamente.
+    # ========================================================
+
+    try:
+
+        response = requests.post(
+            table_url(CREATORS_TABLE),
+            headers={
+                **supabase_headers(),
+                "Prefer": "return=representation"
+            },
+            json=creator,
+            timeout=30
+        )
+
+        if not response.ok:
+
+            # Si falló DB después de subir foto,
+            # intentamos eliminar la foto para no dejar basura.
+            if photo_storage_path:
+                delete_photo(
+                    photo_storage_path
+                )
+
+            return jsonify({
+                "error":
+                    "No se pudo guardar el creador en Supabase: "
+                    + supabase_error(response)
+            }), 500
+
+        data = response.json()
+
+        if isinstance(data, list) and data:
+            return jsonify(data[0])
+
+        return jsonify(creator)
+
+    except Exception as error:
+
+        if photo_storage_path:
+            delete_photo(
+                photo_storage_path
+            )
 
         return jsonify({
             "error":
-                f"No se pudo guardar el creador: {error}"
+                f"Error conectando con Supabase: {error}"
         }), 500
 
 
-# ==========================================
+# ============================================================
 # EDITAR CREADOR
-# ==========================================
+# ============================================================
 
 @app.route(
     "/api/creator/<creator_id>",
     methods=["POST"]
 )
-def edit_creator(
-    creator_id
-):
+def edit_creator(creator_id):
 
     if not session.get(
         "admin",
         False
     ):
-
         return jsonify({
             "error": "No autorizado"
         }), 403
 
-    try:
+    creator = get_creator(
+        creator_id
+    )
 
-        creators = load_creators()
+    if not creator:
+        return jsonify({
+            "error":
+                "Creador no encontrado"
+        }), 404
 
-        creator = next(
-            (
-                item
-                for item in creators
-                if str(
-                    item.get("id")
-                ) == str(creator_id)
-            ),
-            None
-        )
+    # ========================================================
+    # HANDLE
+    # ========================================================
 
-        if not creator:
-
-            return jsonify({
-                "error":
-                    "Creador no encontrado"
-            }), 404
-
-        old_photo = creator.get(
-            "photo",
+    handle = normalize_handle(
+        request.form.get(
+            "handle",
             ""
         )
+    )
 
-        handle = normalize_handle(
+    # ========================================================
+    # CAMPOS
+    # ========================================================
+
+    fields = [
+        "name",
+        "category",
+        "country",
+        "followers",
+        "likes",
+        "views",
+        "videos",
+        "engagement",
+        "average_likes",
+        "average_comments",
+        "average_shares",
+        "instagram",
+        "youtube"
+    ]
+
+    update_data = {}
+
+    for field in fields:
+
+        update_data[field] = (
             request.form.get(
-                "handle",
+                field,
                 ""
-            )
+            ).strip()
         )
 
-        fields = [
+    update_data["handle"] = handle
 
-            "name",
-            "category",
-            "country",
-            "followers",
-            "likes",
-            "views",
-            "videos",
-            "engagement",
-            "average_likes",
-            "average_comments",
-            "average_shares",
-            "instagram",
-            "youtube"
+    # ========================================================
+    # TIKTOK
+    # ========================================================
 
-        ]
+    tiktok_value = request.form.get(
+        "tiktok",
+        ""
+    ).strip()
 
-        creator["handle"] = handle
+    if not tiktok_value:
+        tiktok_value = handle
 
-        for field in fields:
+    update_data["tiktok"] = get_tiktok_url(
+        tiktok_value
+    )
 
-            creator[field] = (
-                request.form.get(
-                    field,
-                    ""
-                ).strip()
-            )
+    # ========================================================
+    # FOTO NUEVA
+    # ========================================================
 
-        tiktok_value = request.form.get(
-            "tiktok",
-            ""
-        ).strip()
+    new_photo_path = ""
 
-        if not tiktok_value:
-
-            tiktok_value = handle
-
-        creator["tiktok"] = (
-            get_tiktok_url(
-                tiktok_value
-            )
-        )
-
-        # ==================================
-        # FOTO NUEVA
-        # ==================================
+    try:
 
         if (
             "photo" in request.files
             and request.files["photo"].filename
         ):
 
-            new_photo = (
-                upload_photo_to_supabase(
-                    request.files["photo"]
+            new_photo_path = upload_photo(
+                request.files["photo"]
+            )
+
+            update_data["photo"] = (
+                storage_public_url(
+                    new_photo_path
                 )
             )
 
-            creator["photo"] = new_photo
+            update_data[
+                "photo_storage_path"
+            ] = new_photo_path
 
-            if (
-                old_photo
-                and old_photo != new_photo
-            ):
+    except Exception as error:
 
-                delete_photo_from_supabase(
-                    old_photo
-                )
+        return jsonify({
+            "error":
+                f"No se pudo subir la nueva foto: {error}"
+        }), 500
 
-        # ==================================
-        # SUPABASE
-        # ==================================
+    # ========================================================
+    # FILTRO
+    # ========================================================
 
-        if supabase_configured():
+    creator_filter = find_creator_filter(
+        creator_id
+    )
 
-            result = supabase_request(
-                "PATCH",
-                f"/rest/v1/{CREATORS_TABLE}"
-                f"?id=eq.{creator_id}",
-                headers={
-                    "Prefer":
-                        "return=representation"
-                },
-                json=creator
+    if not creator_filter:
+
+        if new_photo_path:
+            delete_photo(
+                new_photo_path
             )
 
-            if (
-                isinstance(result, list)
-                and result
-            ):
+        return jsonify({
+            "error":
+                "Identificador de creador inválido."
+        }), 400
 
-                return jsonify(
-                    result[0]
+    column, value = next(
+        iter(creator_filter.items())
+    )
+
+    # ========================================================
+    # ACTUALIZAR
+    # ========================================================
+
+    try:
+
+        response = requests.patch(
+            table_url(CREATORS_TABLE),
+            headers={
+                **supabase_headers(),
+                "Prefer": "return=representation"
+            },
+            params={
+                column: f"eq.{value}"
+            },
+            json=update_data,
+            timeout=30
+        )
+
+        if not response.ok:
+
+            if new_photo_path:
+                delete_photo(
+                    new_photo_path
                 )
-
-            return jsonify(
-                creator
-            )
-
-        # ==================================
-        # LOCAL
-        # ==================================
-
-        if not save_creators(
-            creators
-        ):
 
             return jsonify({
                 "error":
-                    "No se pudieron guardar los cambios."
+                    "No se pudieron guardar los cambios: "
+                    + supabase_error(response)
             }), 500
 
+        data = response.json()
+
+        # ====================================================
+        # ELIMINAR FOTO ANTERIOR
+        # SOLO DESPUÉS DE ACTUALIZAR CORRECTAMENTE
+        # ====================================================
+
+        if new_photo_path:
+
+            old_photo_path = creator.get(
+                "photo_storage_path",
+                ""
+            )
+
+            if old_photo_path:
+                delete_photo(
+                    old_photo_path
+                )
+
+        if isinstance(data, list) and data:
+
+            return jsonify(data[0])
+
+        updated_creator = {
+            **creator,
+            **update_data
+        }
+
         return jsonify(
-            creator
+            updated_creator
         )
 
     except Exception as error:
 
-        print(
-            "ERROR editando creador:",
-            error
-        )
+        if new_photo_path:
+            delete_photo(
+                new_photo_path
+            )
 
         return jsonify({
             "error":
-                f"No se pudo editar el creador: {error}"
+                f"Error actualizando Supabase: {error}"
         }), 500
 
 
-# ==========================================
+# ============================================================
 # ELIMINAR CREADOR
-# ==========================================
+# ============================================================
 
 @app.route(
     "/api/creator/<creator_id>",
     methods=["DELETE"]
 )
-def delete_creator(
-    creator_id
-):
+def delete_creator(creator_id):
 
     if not session.get(
         "admin",
         False
     ):
-
         return jsonify({
             "error": "No autorizado"
         }), 403
 
+    creator = get_creator(
+        creator_id
+    )
+
+    if not creator:
+        return jsonify({
+            "error":
+                "Creador no encontrado"
+        }), 404
+
+    creator_filter = find_creator_filter(
+        creator_id
+    )
+
+    if not creator_filter:
+        return jsonify({
+            "error":
+                "Identificador inválido."
+        }), 400
+
+    column, value = next(
+        iter(creator_filter.items())
+    )
+
     try:
 
-        creators = load_creators()
-
-        creator = next(
-            (
-                item
-                for item in creators
-                if str(
-                    item.get("id")
-                ) == str(creator_id)
-            ),
-            None
+        response = requests.delete(
+            table_url(CREATORS_TABLE),
+            headers={
+                **supabase_headers(),
+                "Prefer": "return=minimal"
+            },
+            params={
+                column: f"eq.{value}"
+            },
+            timeout=30
         )
 
-        if not creator:
+        if not response.ok:
 
             return jsonify({
                 "error":
-                    "Creador no encontrado"
-            }), 404
+                    "No se pudo eliminar el creador: "
+                    + supabase_error(response)
+            }), 500
 
-        photo = creator.get(
-            "photo",
+        # ====================================================
+        # ELIMINAR FOTO DE STORAGE
+        # ====================================================
+
+        old_photo_path = creator.get(
+            "photo_storage_path",
             ""
         )
 
-        # ==================================
-        # SUPABASE
-        # ==================================
-
-        if supabase_configured():
-
-            supabase_request(
-                "DELETE",
-                f"/rest/v1/{CREATORS_TABLE}"
-                f"?id=eq.{creator_id}"
+        if old_photo_path:
+            delete_photo(
+                old_photo_path
             )
-
-            if photo:
-
-                delete_photo_from_supabase(
-                    photo
-                )
-
-            return jsonify({
-                "success": True
-            })
-
-        # ==================================
-        # LOCAL
-        # ==================================
-
-        new_creators = [
-            creator
-            for creator in creators
-            if str(
-                creator.get("id")
-            ) != str(creator_id)
-        ]
-
-        if not save_creators(
-            new_creators
-        ):
-
-            return jsonify({
-                "error":
-                    "No se pudo eliminar el creador."
-            }), 500
 
         return jsonify({
             "success": True
@@ -1608,20 +1454,71 @@ def delete_creator(
 
     except Exception as error:
 
-        print(
-            "ERROR eliminando creador:",
-            error
-        )
-
         return jsonify({
             "error":
-                f"No se pudo eliminar el creador: {error}"
+                f"Error eliminando creador: {error}"
         }), 500
 
 
-# ==========================================
+# ============================================================
+# HEALTH CHECK
+# ============================================================
+
+@app.route(
+    "/health"
+)
+def health():
+
+    if not supabase_configured():
+
+        return jsonify({
+            "status": "error",
+            "supabase": False
+        }), 500
+
+    try:
+
+        response = requests.get(
+            table_url(CREATORS_TABLE),
+            headers={
+                **supabase_headers(),
+                "Accept": "application/json"
+            },
+            params={
+                "select": "id",
+                "limit": "1"
+            },
+            timeout=10
+        )
+
+        if not response.ok:
+
+            return jsonify({
+                "status": "error",
+                "supabase": False,
+                "code":
+                    response.status_code,
+                "message":
+                    response.text
+            }), 500
+
+        return jsonify({
+            "status": "ok",
+            "supabase": True
+        })
+
+    except Exception as error:
+
+        return jsonify({
+            "status": "error",
+            "supabase": False,
+            "message": str(error)
+        }), 500
+
+
+# ============================================================
 # EJECUTAR
-# ==========================================
+# ============================================================
 
 if __name__ == "__main__":
 
@@ -1631,10 +1528,8 @@ if __name__ == "__main__":
     print("==========================================")
 
     print(
-        "Supabase:",
-        "CONECTADO"
-        if supabase_configured()
-        else "NO CONFIGURADO"
+        "Supabase URL:",
+        SUPABASE_URL
     )
 
     print(
@@ -1652,9 +1547,15 @@ if __name__ == "__main__":
         SUPABASE_STORAGE_BUCKET
     )
 
+    print(
+        "Supabase configurado:",
+        supabase_configured()
+    )
+
     print("==========================================")
     print()
 
     app.run(
-        debug=True
+        debug=False
     )
+
