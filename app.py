@@ -92,7 +92,7 @@ ADMIN_TABLE = os.environ.get(
 
 
 # ==========================================
-# CONFIGURACIÓN ADMIN
+# ADMIN
 # ==========================================
 
 ADMIN_USERNAME = "admin"
@@ -100,10 +100,11 @@ DEFAULT_ADMIN_PASSWORD = "admin123"
 
 
 # ==========================================
-# COMPROBAR SUPABASE
+# SUPABASE CONFIGURADO
 # ==========================================
 
 def supabase_configured():
+
     return bool(
         SUPABASE_URL
         and SUPABASE_KEY
@@ -111,7 +112,7 @@ def supabase_configured():
 
 
 # ==========================================
-# PETICIÓN SUPABASE
+# PETICIÓN A SUPABASE
 # ==========================================
 
 def supabase_request(
@@ -121,7 +122,9 @@ def supabase_request(
     query="",
     prefer="return=representation"
 ):
+
     if not supabase_configured():
+
         raise RuntimeError(
             "SUPABASE_URL o SUPABASE_KEY no están configuradas."
         )
@@ -146,6 +149,7 @@ def supabase_request(
     body = None
 
     if data is not None:
+
         body = json.dumps(
             data,
             ensure_ascii=False
@@ -159,6 +163,7 @@ def supabase_request(
     )
 
     try:
+
         with urllib.request.urlopen(
             req,
             timeout=20
@@ -172,8 +177,13 @@ def supabase_request(
                 return []
 
             try:
-                return json.loads(raw)
+
+                return json.loads(
+                    raw
+                )
+
             except json.JSONDecodeError:
+
                 return raw
 
     except urllib.error.HTTPError as error:
@@ -181,10 +191,12 @@ def supabase_request(
         error_body = ""
 
         try:
+
             error_body = (
                 error.read()
                 .decode("utf-8")
             )
+
         except Exception:
             pass
 
@@ -215,10 +227,11 @@ def supabase_request(
 
 
 # ==========================================
-# CARGAR CREADORES DESDE SUPABASE
+# CARGAR CREADORES
 # ==========================================
 
 def load_creators():
+
     try:
 
         result = supabase_request(
@@ -231,10 +244,32 @@ def load_creators():
             result,
             list
         ):
+
             print(
-                "ERROR: Supabase no devolvió una lista de creadores."
+                "ERROR: Supabase no devolvió una lista."
             )
+
             return []
+
+        # ==================================
+        # ASEGURAR ID QUE USA LA APP
+        # ==================================
+
+        for creator in result:
+
+            if creator.get(
+                "creator_uuid"
+            ):
+
+                creator["id"] = str(
+                    creator["creator_uuid"]
+                )
+
+            elif creator.get("id"):
+
+                creator["id"] = str(
+                    creator["id"]
+                )
 
         return result
 
@@ -249,12 +284,13 @@ def load_creators():
 
 
 # ==========================================
-# BUSCAR CREADOR
+# BUSCAR CREADOR POR UUID
 # ==========================================
 
 def get_creator(
     creator_id
 ):
+
     try:
 
         result = supabase_request(
@@ -262,16 +298,24 @@ def get_creator(
             CREATORS_TABLE,
             query=(
                 "select=*"
-                f"&id=eq.{creator_id}"
+                f"&creator_uuid=eq.{creator_id}"
             )
         )
 
-        if isinstance(
-            result,
-            list
-        ) and result:
+        if (
+            isinstance(result, list)
+            and result
+        ):
 
-            return result[0]
+            creator = result[0]
+
+            creator["id"] = str(
+                creator.get(
+                    "creator_uuid"
+                )
+            )
+
+            return creator
 
         return None
 
@@ -290,6 +334,7 @@ def get_creator(
 # ==========================================
 
 def load_admin():
+
     try:
 
         result = supabase_request(
@@ -305,6 +350,7 @@ def load_admin():
             isinstance(result, list)
             and result
         ):
+
             return result[0]
 
         # ==================================
@@ -313,9 +359,10 @@ def load_admin():
 
         initial_admin = {
             "username": ADMIN_USERNAME,
-            "password": generate_password_hash(
-                DEFAULT_ADMIN_PASSWORD
-            )
+            "password":
+                generate_password_hash(
+                    DEFAULT_ADMIN_PASSWORD
+                )
         }
 
         created = supabase_request(
@@ -328,6 +375,7 @@ def load_admin():
             isinstance(created, list)
             and created
         ):
+
             return created[0]
 
         return initial_admin
@@ -386,7 +434,7 @@ def save_admin(
 
             if admin_id:
 
-                result = supabase_request(
+                supabase_request(
                     "PATCH",
                     ADMIN_TABLE,
                     data={
@@ -409,7 +457,9 @@ def save_admin(
             }
         )
 
-        return bool(result is not None)
+        return bool(
+            result is not None
+        )
 
     except Exception as error:
 
@@ -488,7 +538,7 @@ def verify_password(
 
 
 # ==========================================
-# NORMALIZAR USUARIO TIKTOK
+# NORMALIZAR TIKTOK
 # ==========================================
 
 def normalize_handle(
@@ -548,11 +598,9 @@ def get_tiktok_url(
     if not handle:
         return ""
 
-    username = handle.lstrip("@")
-
     return (
         "https://www.tiktok.com/@"
-        + username
+        + handle.lstrip("@")
     )
 
 
@@ -601,8 +649,7 @@ def login():
     print("==========================================")
     print("INTENTO DE LOGIN")
     print("Usuario:", username)
-    print("Supabase:", SUPABASE_URL)
-    print("Tabla admin:", ADMIN_TABLE)
+    print("Tabla:", ADMIN_TABLE)
     print("==========================================")
 
     admin_data = load_admin()
@@ -610,7 +657,7 @@ def login():
     if not admin_data:
 
         return (
-            "No se pudo cargar el usuario administrador.",
+            "No se pudo cargar el administrador.",
             500
         )
 
@@ -629,10 +676,6 @@ def login():
     )
 
     if username != stored_username:
-
-        print(
-            "LOGIN FALLIDO: usuario incorrecto"
-        )
 
         return (
             "Usuario o contraseña incorrectos",
@@ -676,10 +719,6 @@ def login():
         return redirect(
             url_for("index")
         )
-
-    print(
-        "LOGIN FALLIDO: contraseña incorrecta"
-    )
 
     return (
         "Usuario o contraseña incorrectos",
@@ -725,39 +764,27 @@ def change_password():
 
     if request.is_json:
 
-        json_data = (
+        data = (
             request.get_json(
                 silent=True
             )
             or {}
         )
 
-        current_password = json_data.get(
+        current_password = data.get(
             "current_password",
             current_password
         )
 
-        new_password = json_data.get(
+        new_password = data.get(
             "new_password",
             new_password
         )
 
-        confirm_password = json_data.get(
+        confirm_password = data.get(
             "confirm_password",
             confirm_password
         )
-
-    current_password = str(
-        current_password or ""
-    )
-
-    new_password = str(
-        new_password or ""
-    )
-
-    confirm_password = str(
-        confirm_password or ""
-    )
 
     if not new_password:
 
@@ -790,7 +817,7 @@ def change_password():
         return jsonify({
             "success": False,
             "error":
-                "No se pudo cargar el administrador desde Supabase."
+                "No se pudo cargar el administrador."
         }), 500
 
     stored_password = str(
@@ -811,29 +838,20 @@ def change_password():
                 "La contraseña actual es incorrecta."
         }), 400
 
-    admin_data["username"] = str(
-        admin_data.get(
-            "username",
-            ADMIN_USERNAME
-        )
-    ).strip()
-
     admin_data["password"] = (
         generate_password_hash(
             new_password
         )
     )
 
-    saved = save_admin(
+    if not save_admin(
         admin_data
-    )
-
-    if not saved:
+    ):
 
         return jsonify({
             "success": False,
             "error":
-                "No se pudo guardar la nueva contraseña en Supabase."
+                "No se pudo guardar la contraseña en Supabase."
         }), 500
 
     verify_data = load_admin()
@@ -843,18 +861,16 @@ def change_password():
         return jsonify({
             "success": False,
             "error":
-                "No se pudo verificar la contraseña en Supabase."
+                "No se pudo verificar la contraseña."
         }), 500
 
-    verified = verify_password(
+    if not verify_password(
         verify_data.get(
             "password",
             ""
         ),
         new_password
-    )
-
-    if not verified:
+    ):
 
         return jsonify({
             "success": False,
@@ -868,7 +884,7 @@ def change_password():
         "success": True,
         "message":
             "Contraseña cambiada correctamente."
-    }), 200
+    })
 
 
 # ==========================================
@@ -889,7 +905,7 @@ def logout():
 
 
 # ==========================================
-# CREAR CREADOR
+# AGREGAR CREADOR
 # ==========================================
 
 @app.route(
@@ -950,7 +966,7 @@ def add_creator():
         )
 
     # ======================================
-    # HANDLE
+    # DATOS
     # ======================================
 
     handle = normalize_handle(
@@ -960,12 +976,8 @@ def add_creator():
         )
     )
 
-    # ======================================
-    # CREADOR
-    # ======================================
-
     creator = {
-        "id": str(
+        "creator_uuid": str(
             uuid.uuid4()
         ),
 
@@ -1063,10 +1075,6 @@ def add_creator():
             photo
     }
 
-    # ======================================
-    # GUARDAR EN SUPABASE
-    # ======================================
-
     try:
 
         result = supabase_request(
@@ -1080,9 +1088,21 @@ def add_creator():
             and result
         ):
 
-            return jsonify(
-                result[0]
+            saved = result[0]
+
+            saved["id"] = str(
+                saved.get(
+                    "creator_uuid"
+                )
             )
+
+            return jsonify(
+                saved
+            )
+
+        creator["id"] = (
+            creator["creator_uuid"]
+        )
 
         return jsonify(
             creator
@@ -1128,22 +1148,12 @@ def edit_creator(
                 "Creador no encontrado"
         }), 404
 
-    # ======================================
-    # HANDLE
-    # ======================================
-
     handle = normalize_handle(
         request.form.get(
             "handle",
             ""
         )
     )
-
-    creator["handle"] = handle
-
-    # ======================================
-    # CAMPOS
-    # ======================================
 
     fields = [
         "name",
@@ -1161,14 +1171,18 @@ def edit_creator(
         "youtube"
     ]
 
+    update_data = {}
+
     for field in fields:
 
-        creator[field] = (
+        update_data[field] = (
             request.form.get(
                 field,
                 ""
             ).strip()
         )
+
+    update_data["handle"] = handle
 
     # ======================================
     # TIKTOK
@@ -1182,7 +1196,7 @@ def edit_creator(
     if not tiktok_value:
         tiktok_value = handle
 
-    creator["tiktok"] = (
+    update_data["tiktok"] = (
         get_tiktok_url(
             tiktok_value
         )
@@ -1223,27 +1237,10 @@ def edit_creator(
             file_path
         )
 
-        creator["photo"] = (
+        update_data["photo"] = (
             "/static/uploads/"
             + filename
         )
-
-    # ======================================
-    # QUITAR CAMPOS QUE NO DEBEMOS ENVIAR
-    # ======================================
-
-    update_data = dict(
-        creator
-    )
-
-    update_data.pop(
-        "id",
-        None
-    )
-
-    # ======================================
-    # GUARDAR
-    # ======================================
 
     try:
 
@@ -1252,7 +1249,7 @@ def edit_creator(
             CREATORS_TABLE,
             data=update_data,
             query=(
-                f"id=eq.{creator_id}"
+                f"creator_uuid=eq.{creator_id}"
             )
         )
 
@@ -1261,11 +1258,25 @@ def edit_creator(
             and result
         ):
 
-            return jsonify(
-                result[0]
+            saved = result[0]
+
+            saved["id"] = str(
+                saved.get(
+                    "creator_uuid"
+                )
             )
 
-        creator["id"] = creator_id
+            return jsonify(
+                saved
+            )
+
+        creator.update(
+            update_data
+        )
+
+        creator["id"] = (
+            creator_id
+        )
 
         return jsonify(
             creator
@@ -1317,7 +1328,7 @@ def delete_creator(
             "DELETE",
             CREATORS_TABLE,
             query=(
-                f"id=eq.{creator_id}"
+                f"creator_uuid=eq.{creator_id}"
             ),
             prefer=""
         )
@@ -1335,7 +1346,7 @@ def delete_creator(
 
 
 # ==========================================
-# PRUEBA DE SUPABASE
+# PRUEBA SUPABASE
 # ==========================================
 
 @app.route(
@@ -1350,7 +1361,8 @@ def supabase_test():
 
         return jsonify({
             "success": False,
-            "error": "No autorizado"
+            "error":
+                "No autorizado"
         }), 403
 
     try:
@@ -1358,7 +1370,7 @@ def supabase_test():
         creators = supabase_request(
             "GET",
             CREATORS_TABLE,
-            query="select=id&limit=1"
+            query="select=id,creator_uuid&limit=5"
         )
 
         admin = supabase_request(
@@ -1369,18 +1381,27 @@ def supabase_test():
 
         return jsonify({
             "success": True,
-            "supabase": SUPABASE_URL,
-            "creators_table": CREATORS_TABLE,
-            "admin_table": ADMIN_TABLE,
-            "creators_connection": True,
-            "admin_connection": True,
+            "creators_table":
+                CREATORS_TABLE,
+            "admin_table":
+                ADMIN_TABLE,
+            "creators_connection":
+                True,
+            "admin_connection":
+                True,
             "creator_rows_found":
                 len(creators)
-                if isinstance(creators, list)
+                if isinstance(
+                    creators,
+                    list
+                )
                 else 0,
             "admin_rows_found":
                 len(admin)
-                if isinstance(admin, list)
+                if isinstance(
+                    admin,
+                    list
+                )
                 else 0
         })
 
@@ -1416,20 +1437,12 @@ if __name__ == "__main__":
     print()
 
     print(
-        "Tabla de creadores:"
-    )
-
-    print(
+        "Tabla de creadores:",
         CREATORS_TABLE
     )
 
-    print()
-
     print(
-        "Tabla de administrador:"
-    )
-
-    print(
+        "Tabla de administrador:",
         ADMIN_TABLE
     )
 
