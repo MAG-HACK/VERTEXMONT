@@ -585,7 +585,170 @@ def get_creator(creator_id):
             error
         )
         return None
+# ============================================================
+# CONTADORES DE VISTAS
+# ============================================================
 
+def increment_site_views():
+    """
+    Suma una visita a la página principal.
+    Se guarda permanentemente en Supabase.
+    """
+
+    if not supabase_configured():
+        return
+
+    try:
+        # Obtener contador actual
+        response = requests.get(
+            table_url("site_stats"),
+            headers={
+                **supabase_headers(),
+                "Accept": "application/json"
+            },
+            params={
+                "select": "page_views",
+                "id": "eq.1",
+                "limit": "1"
+            },
+            timeout=20
+        )
+
+        if not response.ok:
+            print(
+                "ERROR obteniendo vistas de página:",
+                response.text
+            )
+            return
+
+        data = response.json()
+
+        if not data:
+            return
+
+        current_views = int(
+            data[0].get("page_views") or 0
+        )
+
+        # Sumar vista
+        requests.patch(
+            table_url("site_stats"),
+            headers={
+                **supabase_headers(),
+                "Prefer": "return=minimal"
+            },
+            params={
+                "id": "eq.1"
+            },
+            json={
+                "page_views": current_views + 1
+            },
+            timeout=20
+        )
+
+    except Exception as error:
+        print(
+            "ERROR incrementando vistas de página:",
+            error
+        )
+
+
+def get_site_views():
+    """
+    Obtiene el total de vistas de la página.
+    """
+
+    if not supabase_configured():
+        return 0
+
+    try:
+        response = requests.get(
+            table_url("site_stats"),
+            headers={
+                **supabase_headers(),
+                "Accept": "application/json"
+            },
+            params={
+                "select": "page_views",
+                "id": "eq.1",
+                "limit": "1"
+            },
+            timeout=20
+        )
+
+        if not response.ok:
+            return 0
+
+        data = response.json()
+
+        if not data:
+            return 0
+
+        return int(
+            data[0].get("page_views") or 0
+        )
+
+    except Exception as error:
+        print(
+            "ERROR obteniendo vistas:",
+            error
+        )
+        return 0
+
+
+def increment_creator_views(creator_id):
+    """
+    Suma una vista al perfil de un creador.
+    """
+
+    creator = get_creator(creator_id)
+
+    if not creator:
+        return
+
+    creator_filter = find_creator_filter(
+        creator_id
+    )
+
+    if not creator_filter:
+        return
+
+    column, value = next(
+        iter(creator_filter.items())
+    )
+
+    current_views = int(
+        creator.get("profile_views") or 0
+    )
+
+    try:
+        response = requests.patch(
+            table_url(CREATORS_TABLE),
+            headers={
+                **supabase_headers(),
+                "Prefer": "return=representation"
+            },
+            params={
+                column: f"eq.{value}"
+            },
+            json={
+                "profile_views":
+                    current_views + 1
+            },
+            timeout=20
+        )
+
+        if not response.ok:
+            print(
+                "ERROR incrementando vistas del creador:",
+                response.text
+            )
+
+    except Exception as error:
+        print(
+            "ERROR incrementando vistas del creador:",
+            error
+        )
 
 # ============================================================
 # INICIO
