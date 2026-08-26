@@ -811,7 +811,7 @@
 
 
 <!-- =================================
-     DATOS
+     DATOS PARA JAVASCRIPT
 ================================= -->
 
 <script
@@ -820,19 +820,28 @@
 >
 {{ {
     "creators": creators,
-    "admin": admin
+    "admin": admin,
+    "shared_creator": shared_creator | default(None)
 } | tojson }}
 </script>
 
 
 <script>
+
     const VERTEX_DATA = JSON.parse(
         document.getElementById("vertex-data").textContent
     );
 
-    const creators = VERTEX_DATA.creators;
-    const IS_ADMIN = VERTEX_DATA.admin;
+    const creators = VERTEX_DATA.creators || [];
+
+    const IS_ADMIN = VERTEX_DATA.admin || false;
+
+    const SHARED_CREATOR =
+        VERTEX_DATA.shared_creator || null;
+
 </script>
+
+
 <!-- =================================
      CAMBIAR CONTRASEÑA
 ================================= -->
@@ -931,4 +940,5 @@
 <script src="{{ url_for('static', filename='app.js') }}"></script>
 
 </body>
+
 </html>
