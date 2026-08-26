@@ -1553,3 +1553,105 @@ Gracias.`;
 
     window.location.href = mailto;
 }
+
+
+// =========================================
+// COMPARTIR PERFIL DEL CREADOR
+// =========================================
+async function shareCurrentCreator() {
+    if (!currentCreator) {
+        return;
+    }
+
+    const creatorUuid =
+        currentCreator.creator_uuid;
+
+    if (!creatorUuid) {
+        alert(
+            "Este creador no tiene un enlace público disponible."
+        );
+        return;
+    }
+
+    const shareUrl =
+        `${window.location.origin}/creator/${creatorUuid}`;
+
+    const shareData = {
+        title:
+            currentCreator.name ||
+            "Creador de VERTEXMONT",
+
+        text:
+            `Conoce el perfil de ${
+                currentCreator.name ||
+                "este creador"
+            } en VERTEXMONT.`,
+
+        url: shareUrl
+    };
+
+    try {
+        if (
+            navigator.share &&
+            window.isSecureContext
+        ) {
+            await navigator.share(shareData);
+            return;
+        }
+
+        await navigator.clipboard.writeText(
+            shareUrl
+        );
+
+        alert(
+            "✓ Enlace copiado al portapapeles."
+        );
+
+    } catch (error) {
+        if (
+            error &&
+            error.name === "AbortError"
+        ) {
+            return;
+        }
+
+        try {
+            const textarea =
+                document.createElement("textarea");
+
+            textarea.value = shareUrl;
+
+            textarea.style.position =
+                "fixed";
+
+            textarea.style.opacity = "0";
+
+            document.body.appendChild(
+                textarea
+            );
+
+            textarea.focus();
+            textarea.select();
+
+            document.execCommand(
+                "copy"
+            );
+
+            textarea.remove();
+
+            alert(
+                "✓ Enlace copiado al portapapeles."
+            );
+
+        } catch (copyError) {
+            console.error(
+                "No se pudo copiar el enlace:",
+                copyError
+            );
+
+            alert(
+                `Comparte este enlace:\n\n${shareUrl}`
+            );
+        }
+    }
+}

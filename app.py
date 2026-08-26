@@ -1515,7 +1515,27 @@ def health():
             "message": str(error)
         }), 500
 
+# ============================================================
+# PERFIL PÚBLICO DEL CREADOR
+# ============================================================
+@app.route("/creator/<creator_uuid>")
+def public_creator(creator_uuid):
+    try:
+        uuid.UUID(creator_uuid)
+    except ValueError:
+        return "Enlace de creador inválido.", 404
 
+    creator = get_creator(creator_uuid)
+
+    if not creator:
+        return "Creador no encontrado.", 404
+
+    return render_template(
+        "index.html",
+        creators=[creator],
+        admin=False,
+        shared_creator=creator
+    )
 # ============================================================
 # EJECUTAR
 # ============================================================
