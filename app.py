@@ -755,6 +755,14 @@ def increment_creator_views(creator_id):
 # ============================================================
 @app.route("/")
 def index():
+
+    # Contar una sola visita por sesión
+    if not session.get("site_view_counted"):
+
+        increment_site_views()
+
+        session["site_view_counted"] = True
+
     creators = load_creators()
 
     admin = session.get(
@@ -762,14 +770,19 @@ def index():
         False
     )
 
+    site_views = 0
+
+    # Solo enviamos el contador al administrador
+    if admin:
+        site_views = get_site_views()
+
     return render_template(
         "index.html",
         creators=creators,
         admin=admin,
-        shared_creator=None
+        shared_creator=None,
+        site_views=site_views
     )
-
-
 # ============================================================
 # LOGIN
 # ============================================================
@@ -1650,7 +1663,6 @@ def health():
             "message": str(error)
         }), 500
 
-
 # ============================================================
 # PERFIL PÚBLICO DEL CREADOR
 # ============================================================
@@ -1670,6 +1682,29 @@ def public_creator(creator_uuid):
     if not creator:
         return "Creador no encontrado.", 404
 
+    # ========================================================
+    # CONTAR VISITA DEL PERFIL
+    # ========================================================
+
+    view_key = (
+        f"creator_view_{creator_uuid}"
+    )
+
+    # Evita contar múltiples recargas del mismo visitante
+    # durante la misma sesión
+    if not session.get(view_key):
+
+        increment_creator_views(
+            creator_uuid
+        )
+
+        session[view_key] = True
+
+        # Recargar datos actualizados
+        creator = get_creator(
+            creator_uuid
+        )
+
     return render_template(
         "index.html",
 
@@ -1677,14 +1712,10 @@ def public_creator(creator_uuid):
 
         admin=False,
 
-        # IMPORTANTE:
-        # Se manda el creador seleccionado
-        # al HTML para que pueda abrirse
-        # automáticamente.
-        shared_creator=creator
+        shared_creator=creator,
+
+        site_views=0
     )
-
-
 # ============================================================
 # EJECUTAR
 # ============================================================
