@@ -193,11 +193,21 @@ function openProfile(creator) {
 
 
 function closeProfile() {
+
+    // Si el perfil fue abierto desde un enlace compartido
+    // como /creator/UUID, regresar siempre a la página principal
+    if (SHARED_CREATOR) {
+        window.location.href =
+            "https://vertexmont.onrender.com/";
+        return;
+    }
+
+    // Si fue abierto normalmente desde el catálogo,
+    // solo cerrar el panel
     document
         .getElementById("profileModal")
         .classList.remove("open");
 }
-
 
 // =========================================
 // COMPARTIR PERFIL
