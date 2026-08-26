@@ -6,9 +6,9 @@ const PLACEHOLDER =
     "https://placehold.co/600x600?text=Creator";
 
 
-/* =========================================
-   MOSTRAR CREADORES
-========================================= */
+// =========================================
+// MOSTRAR CREADORES
+// =========================================
 
 function renderCreators() {
 
@@ -21,7 +21,6 @@ function renderCreators() {
             .value
             .toLowerCase()
             .trim();
-
 
     const filtered =
         creatorList.filter(creator => {
@@ -38,12 +37,9 @@ function renderCreators() {
                 name.includes(search) ||
                 handle.includes(search)
             );
-
         });
 
-
     grid.innerHTML = "";
-
 
     if (!filtered.length) {
 
@@ -55,9 +51,7 @@ function renderCreators() {
         `;
 
         return;
-
     }
-
 
     filtered.forEach(creator => {
 
@@ -67,9 +61,7 @@ function renderCreators() {
         card.className =
             "creator-card";
 
-
         card.innerHTML = `
-
             <img
                 class="creator-image"
                 src="${creator.photo || PLACEHOLDER}"
@@ -109,32 +101,25 @@ function renderCreators() {
                 </div>
 
             </div>
-
         `;
 
-
         card.onclick = () => {
-
             openProfile(creator);
-
         };
-
 
         grid.appendChild(card);
 
     });
-
 }
 
 
-/* =========================================
-   PERFIL
-========================================= */
+// =========================================
+// PERFIL
+// =========================================
 
 function openProfile(creator) {
 
     currentCreator = creator;
-
 
     document.getElementById("profilePhoto").src =
         creator.photo || PLACEHOLDER;
@@ -179,15 +164,8 @@ function openProfile(creator) {
     const socials =
         document.getElementById("socialLinks");
 
-
     socials.innerHTML = "";
 
-
-    /*
-    =====================================
-    REDES SOCIALES
-    =====================================
-    */
 
     addSocial(
         socials,
@@ -196,14 +174,12 @@ function openProfile(creator) {
         "tiktok"
     );
 
-
     addSocial(
         socials,
         "📸 Instagram",
         creator.instagram,
         "instagram"
     );
-
 
     addSocial(
         socials,
@@ -227,7 +203,6 @@ function openProfile(creator) {
     document
         .getElementById("profileModal")
         .classList.add("open");
-
 }
 
 
@@ -240,9 +215,136 @@ function closeProfile() {
 }
 
 
-/* =========================================
-   CREAR LINKS DE REDES
-========================================= */
+// =========================================
+// COMPARTIR PERFIL
+// =========================================
+
+async function shareCurrentCreator() {
+
+    if (!currentCreator) {
+        return;
+    }
+
+    const creatorUuid =
+        currentCreator.creator_uuid;
+
+    if (!creatorUuid) {
+
+        alert(
+            "Este creador no tiene un enlace público disponible."
+        );
+
+        return;
+    }
+
+
+    const shareUrl =
+        `${window.location.origin}/creator/${creatorUuid}`;
+
+
+    const shareData = {
+
+        title:
+            currentCreator.name ||
+            "Creador de VERTEXMONT",
+
+        text:
+            `Conoce el perfil de ${
+                currentCreator.name ||
+                "este creador"
+            } en VERTEXMONT.`,
+
+        url: shareUrl
+
+    };
+
+
+    try {
+
+        if (
+            navigator.share &&
+            window.isSecureContext
+        ) {
+
+            await navigator.share(
+                shareData
+            );
+
+            return;
+        }
+
+
+        if (
+            navigator.clipboard &&
+            window.isSecureContext
+        ) {
+
+            await navigator.clipboard.writeText(
+                shareUrl
+            );
+
+            alert(
+                "✓ Enlace copiado al portapapeles."
+            );
+
+            return;
+        }
+
+
+        const textarea =
+            document.createElement("textarea");
+
+        textarea.value =
+            shareUrl;
+
+        textarea.style.position =
+            "fixed";
+
+        textarea.style.opacity =
+            "0";
+
+        document.body.appendChild(
+            textarea
+        );
+
+        textarea.focus();
+
+        textarea.select();
+
+        document.execCommand(
+            "copy"
+        );
+
+        textarea.remove();
+
+        alert(
+            "✓ Enlace copiado al portapapeles."
+        );
+
+    } catch (error) {
+
+        if (
+            error &&
+            error.name === "AbortError"
+        ) {
+            return;
+        }
+
+        console.error(
+            "Error compartiendo:",
+            error
+        );
+
+        alert(
+            `Comparte este enlace:\n\n${shareUrl}`
+        );
+    }
+}
+
+
+// =========================================
+// REDES SOCIALES
+// =========================================
 
 function addSocial(
     container,
@@ -253,16 +355,13 @@ function addSocial(
 
     if (!value) return;
 
-
     const url =
         getSocialUrl(
             value,
             platform
         );
 
-
     container.innerHTML += `
-
         <a
             class="social-link"
             href="${escapeHtml(url)}"
@@ -271,15 +370,13 @@ function addSocial(
         >
             ${name}
         </a>
-
     `;
-
 }
 
 
-/* =========================================
-   GENERAR URL CORRECTA
-========================================= */
+// =========================================
+// URL RED SOCIAL
+// =========================================
 
 function getSocialUrl(
     value,
@@ -290,31 +387,18 @@ function getSocialUrl(
         String(value || "")
             .trim();
 
-
     if (!username) {
-
         return "#";
-
     }
 
-
-    /*
-    Si ya es una URL completa
-    */
 
     if (
         username.startsWith("http://") ||
         username.startsWith("https://")
     ) {
-
         return username;
-
     }
 
-
-    /*
-    Quitar @
-    */
 
     username =
         username.replace(
@@ -323,44 +407,26 @@ function getSocialUrl(
         );
 
 
-    /*
-    TIKTOK
-    */
-
     if (platform === "tiktok") {
 
         return (
-            "https://www.tiktok.com/@"
-            + username
+            "https://www.tiktok.com/@" +
+            username
         );
-
     }
 
-
-    /*
-    INSTAGRAM
-    */
 
     if (platform === "instagram") {
 
         return (
-            "https://www.instagram.com/"
-            + username
-            + "/"
+            "https://www.instagram.com/" +
+            username +
+            "/"
         );
-
     }
 
 
-    /*
-    YOUTUBE
-    */
-
     if (platform === "youtube") {
-
-        /*
-        Si es @canal
-        */
 
         if (
             String(value)
@@ -369,33 +435,26 @@ function getSocialUrl(
         ) {
 
             return (
-                "https://www.youtube.com/@"
-                + username
+                "https://www.youtube.com/@" +
+                username
             );
-
         }
 
 
-        /*
-        Buscar el canal
-        */
-
         return (
-            "https://www.youtube.com/results?search_query="
-            + encodeURIComponent(username)
+            "https://www.youtube.com/results?search_query=" +
+            encodeURIComponent(username)
         );
-
     }
 
 
     return username;
-
 }
 
 
-/* =========================================
-   MENÚ
-========================================= */
+// =========================================
+// MENÚ
+// =========================================
 
 function openMenu() {
 
@@ -428,9 +487,9 @@ function closeMenuOutside(event) {
 }
 
 
-/* =========================================
-   TEMAS
-========================================= */
+// =========================================
+// TEMAS
+// =========================================
 
 function setTheme(theme) {
 
@@ -461,7 +520,6 @@ function applyTheme() {
             );
 
         return;
-
     }
 
 
@@ -474,7 +532,6 @@ function applyTheme() {
             );
 
         return;
-
     }
 
 
@@ -495,9 +552,9 @@ function applyTheme() {
 }
 
 
-/* =========================================
-   ORDENAR
-========================================= */
+// =========================================
+// ORDENAR
+// =========================================
 
 function sortCreators(type) {
 
@@ -531,8 +588,7 @@ function sortCreators(type) {
 
         creatorList.sort(
             (a, b) =>
-                numberValue(b.followers)
-                -
+                numberValue(b.followers) -
                 numberValue(a.followers)
         );
 
@@ -543,8 +599,7 @@ function sortCreators(type) {
 
         creatorList.sort(
             (a, b) =>
-                numberValue(b.views)
-                -
+                numberValue(b.views) -
                 numberValue(a.views)
         );
 
@@ -574,9 +629,9 @@ function numberValue(value) {
 }
 
 
-/* =========================================
-   LOGIN
-========================================= */
+// =========================================
+// LOGIN
+// =========================================
 
 function openLogin() {
 
@@ -612,9 +667,9 @@ function logout() {
 }
 
 
-/* =========================================
-   AGREGAR / EDITAR
-========================================= */
+// =========================================
+// AGREGAR / EDITAR
+// =========================================
 
 function openCreator(creator = null) {
 
@@ -623,7 +678,6 @@ function openCreator(creator = null) {
         openLogin();
 
         return;
-
     }
 
 
@@ -631,10 +685,14 @@ function openCreator(creator = null) {
 
 
     const modal =
-        document.getElementById("creatorModal");
+        document.getElementById(
+            "creatorModal"
+        );
 
     const form =
-        document.getElementById("creatorForm");
+        document.getElementById(
+            "creatorForm"
+        );
 
 
     form.reset();
@@ -649,7 +707,9 @@ function openCreator(creator = null) {
 
 
     const status =
-        document.getElementById("csvStatus");
+        document.getElementById(
+            "csvStatus"
+        );
 
     status.textContent = "";
 
@@ -708,9 +768,9 @@ function closeCreator() {
 }
 
 
-/* =========================================
-   GUARDAR
-========================================= */
+// =========================================
+// GUARDAR
+// =========================================
 
 document
     .getElementById("creatorForm")
@@ -759,7 +819,6 @@ document
                 );
 
                 return;
-
             }
 
 
@@ -775,7 +834,9 @@ document
 
             } else {
 
-                creatorList.unshift(result);
+                creatorList.unshift(
+                    result
+                );
 
             }
 
@@ -790,9 +851,9 @@ document
     );
 
 
-/* =========================================
-   IMPORTAR CSV
-========================================= */
+// =========================================
+// IMPORTAR CSV
+// =========================================
 
 const csvFile =
     document.getElementById("csvFile");
@@ -821,7 +882,6 @@ async function handleCsv(event) {
 
     status.textContent =
         "Leyendo CSV...";
-
 
     status.className =
         "csv-status";
@@ -960,8 +1020,8 @@ async function handleCsv(event) {
     } catch (error) {
 
         status.textContent =
-            "❌ Error: "
-            + error.message;
+            "❌ Error: " +
+            error.message;
 
         status.className =
             "csv-status error";
@@ -1140,6 +1200,10 @@ function parseCSV(text) {
 }
 
 
+// =========================================
+// CSV EJEMPLO
+// =========================================
+
 function downloadCsvExample() {
 
     const csv =
@@ -1191,9 +1255,9 @@ Average Shares,2881`;
 }
 
 
-/* =========================================
-   EDITAR
-========================================= */
+// =========================================
+// EDITAR
+// =========================================
 
 function editCurrentCreator() {
 
@@ -1201,14 +1265,16 @@ function editCurrentCreator() {
 
     closeProfile();
 
-    openCreator(currentCreator);
+    openCreator(
+        currentCreator
+    );
 
 }
 
 
-/* =========================================
-   ELIMINAR
-========================================= */
+// =========================================
+// ELIMINAR
+// =========================================
 
 async function deleteCurrentCreator() {
 
@@ -1247,7 +1313,8 @@ async function deleteCurrentCreator() {
     creatorList =
         creatorList.filter(
             creator =>
-                creator.id !== currentCreator.id
+                creator.id !==
+                currentCreator.id
         );
 
 
@@ -1260,29 +1327,82 @@ async function deleteCurrentCreator() {
 }
 
 
-/* =========================================
-   SEGURIDAD HTML
-========================================= */
+// =========================================
+// SEGURIDAD HTML
+// =========================================
 
 function escapeHtml(value) {
 
     return String(value || "")
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
+
+        .replaceAll(
+            "&",
+            "&amp;"
+        )
+
+        .replaceAll(
+            "<",
+            "&lt;"
+        )
+
+        .replaceAll(
+            ">",
+            "&gt;"
+        )
+
+        .replaceAll(
+            '"',
+            "&quot;"
+        )
+
+        .replaceAll(
+            "'",
+            "&#039;"
+        );
 
 }
 
 
-/* =========================================
-   INICIAR
-========================================= */
+// =========================================
+// INICIAR
+// =========================================
 
 applyTheme();
 
 renderCreators();
+
+
+// =========================================
+// ABRIR PERFIL COMPARTIDO
+// =========================================
+
+if (SHARED_CREATOR) {
+
+    const sharedCreator =
+        creatorList.find(
+            creator =>
+                creator.creator_uuid ===
+                SHARED_CREATOR.creator_uuid
+        );
+
+
+    if (sharedCreator) {
+
+        setTimeout(
+            () => {
+
+                openProfile(
+                    sharedCreator
+                );
+
+            },
+            100
+        );
+
+    }
+
+}
+
 
 // =========================================
 // CAMBIAR CONTRASEÑA
@@ -1291,58 +1411,73 @@ renderCreators();
 function openChangePassword() {
 
     if (!IS_ADMIN) {
+
         openLogin();
+
         return;
+
     }
 
-    const modal = document.getElementById(
-        "changePasswordModal"
-    );
 
-    const form = document.getElementById(
-        "changePasswordForm"
-    );
+    const modal =
+        document.getElementById(
+            "changePasswordModal"
+        );
 
-    const status = document.getElementById(
-        "changePasswordStatus"
-    );
+    const form =
+        document.getElementById(
+            "changePasswordForm"
+        );
 
-    if (!modal || !form || !status) {
+    const status =
+        document.getElementById(
+            "changePasswordStatus"
+        );
+
+
+    if (
+        !modal ||
+        !form ||
+        !status
+    ) {
+
         console.error(
             "No se encontraron los elementos del cambio de contraseña."
         );
+
         return;
+
     }
+
 
     form.reset();
 
     status.textContent = "";
 
-    status.className = "csv-status";
+    status.className =
+        "csv-status";
 
     modal.classList.add("open");
+
 }
 
-
-// =========================================
-// CERRAR MODAL
-// =========================================
 
 function closeChangePassword() {
 
-    const modal = document.getElementById(
-        "changePasswordModal"
-    );
+    const modal =
+        document.getElementById(
+            "changePasswordModal"
+        );
+
 
     if (modal) {
+
         modal.classList.remove("open");
+
     }
+
 }
 
-
-// =========================================
-// GUARDAR NUEVA CONTRASEÑA
-// =========================================
 
 const changePasswordForm =
     document.getElementById(
@@ -1358,13 +1493,16 @@ if (changePasswordForm) {
 
             event.preventDefault();
 
-            const form = document.getElementById(
-                "changePasswordForm"
-            );
 
-            const status = document.getElementById(
-                "changePasswordStatus"
-            );
+            const form =
+                document.getElementById(
+                    "changePasswordForm"
+                );
+
+            const status =
+                document.getElementById(
+                    "changePasswordStatus"
+                );
 
             const submitButton =
                 form.querySelector(
@@ -1372,16 +1510,9 @@ if (changePasswordForm) {
                 );
 
 
-            // =================================
-            // DATOS
-            // =================================
+            const data =
+                new FormData(form);
 
-            const data = new FormData(form);
-
-
-            // =================================
-            // ESTADO
-            // =================================
 
             status.textContent =
                 "Guardando contraseña...";
@@ -1392,31 +1523,26 @@ if (changePasswordForm) {
 
             if (submitButton) {
 
-                submitButton.disabled = true;
+                submitButton.disabled =
+                    true;
 
                 submitButton.textContent =
                     "Guardando...";
+
             }
 
 
             try {
 
-                // =============================
-                // ENVIAR AL SERVIDOR
-                // =============================
+                const response =
+                    await fetch(
+                        "/change-password",
+                        {
+                            method: "POST",
+                            body: data
+                        }
+                    );
 
-                const response = await fetch(
-                    "/change-password",
-                    {
-                        method: "POST",
-                        body: data
-                    }
-                );
-
-
-                // =============================
-                // LEER RESPUESTA
-                // =============================
 
                 let result;
 
@@ -1435,10 +1561,6 @@ if (changePasswordForm) {
                 }
 
 
-                // =============================
-                // ERROR
-                // =============================
-
                 if (!response.ok) {
 
                     status.textContent =
@@ -1452,12 +1574,9 @@ if (changePasswordForm) {
                         "csv-status error";
 
                     return;
+
                 }
 
-
-                // =============================
-                // ÉXITO
-                // =============================
 
                 status.textContent =
                     "✓ Contraseña guardada correctamente.";
@@ -1466,13 +1585,7 @@ if (changePasswordForm) {
                     "csv-status success";
 
 
-                // Limpiar campos
                 form.reset();
-
-
-                // IMPORTANTE:
-                // NO cerramos el modal.
-                // El usuario podrá ver el mensaje.
 
 
             } catch (error) {
@@ -1481,6 +1594,7 @@ if (changePasswordForm) {
                     "Error cambiando contraseña:",
                     error
                 );
+
 
                 status.textContent =
                     "❌ No se pudo conectar con el servidor.";
@@ -1493,10 +1607,12 @@ if (changePasswordForm) {
 
                 if (submitButton) {
 
-                    submitButton.disabled = false;
+                    submitButton.disabled =
+                        false;
 
                     submitButton.textContent =
                         "Cambiar contraseña";
+
                 }
 
             }
@@ -1505,6 +1621,8 @@ if (changePasswordForm) {
     );
 
 }
+
+
 // =========================================
 // SOLICITAR CREADOR
 // =========================================
@@ -1512,23 +1630,35 @@ if (changePasswordForm) {
 function requestCreator() {
 
     if (!currentCreator) {
+
         return;
+
     }
 
+
     const creatorName =
-        currentCreator.name || "Creador";
+        currentCreator.name ||
+        "Creador";
+
 
     const creatorHandle =
-        currentCreator.handle || "";
+        currentCreator.handle ||
+        "";
+
 
     const creatorCountry =
-        currentCreator.country || "";
+        currentCreator.country ||
+        "";
+
 
     const creatorCategory =
-        currentCreator.category || "";
+        currentCreator.category ||
+        "";
+
 
     const subject =
         `Solicitud de creador — ${creatorName}`;
+
 
     const body =
 `Hola,
@@ -1536,13 +1666,17 @@ function requestCreator() {
 Quiero solicitar al creador:
 
 Nombre: ${creatorName}
+
 Usuario: ${creatorHandle}
+
 País: ${creatorCountry}
+
 Categoría: ${creatorCategory}
 
 Me gustaría solicitar este creador para publicitar mi marca.
 
 Gracias.`;
+
 
     const mailto =
         "mailto:patrocinersmanagement@gmail.com" +
@@ -1551,107 +1685,37 @@ Gracias.`;
         "&body=" +
         encodeURIComponent(body);
 
-    window.location.href = mailto;
+
+    window.location.href =
+        mailto;
+
 }
 
+// =========================================
+// ABRIR CREADOR DESDE ENLACE COMPARTIDO
+// =========================================
 
-// =========================================
-// COMPARTIR PERFIL DEL CREADOR
-// =========================================
-async function shareCurrentCreator() {
-    if (!currentCreator) {
+function openSharedCreatorFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    const creatorId = params.get("creator");
+
+    if (!creatorId) {
         return;
     }
 
-    const creatorUuid =
-        currentCreator.creator_uuid;
+    const creator = creatorList.find(
+        creator => String(creator.id) === String(creatorId)
+    );
 
-    if (!creatorUuid) {
-        alert(
-            "Este creador no tiene un enlace público disponible."
-        );
+    if (!creator) {
         return;
     }
 
-    const shareUrl =
-        `${window.location.origin}/creator/${creatorUuid}`;
+    // Mostrar primero toda la lista
+    renderCreators();
 
-    const shareData = {
-        title:
-            currentCreator.name ||
-            "Creador de VERTEXMONT",
-
-        text:
-            `Conoce el perfil de ${
-                currentCreator.name ||
-                "este creador"
-            } en VERTEXMONT.`,
-
-        url: shareUrl
-    };
-
-    try {
-        if (
-            navigator.share &&
-            window.isSecureContext
-        ) {
-            await navigator.share(shareData);
-            return;
-        }
-
-        await navigator.clipboard.writeText(
-            shareUrl
-        );
-
-        alert(
-            "✓ Enlace copiado al portapapeles."
-        );
-
-    } catch (error) {
-        if (
-            error &&
-            error.name === "AbortError"
-        ) {
-            return;
-        }
-
-        try {
-            const textarea =
-                document.createElement("textarea");
-
-            textarea.value = shareUrl;
-
-            textarea.style.position =
-                "fixed";
-
-            textarea.style.opacity = "0";
-
-            document.body.appendChild(
-                textarea
-            );
-
-            textarea.focus();
-            textarea.select();
-
-            document.execCommand(
-                "copy"
-            );
-
-            textarea.remove();
-
-            alert(
-                "✓ Enlace copiado al portapapeles."
-            );
-
-        } catch (copyError) {
-            console.error(
-                "No se pudo copiar el enlace:",
-                copyError
-            );
-
-            alert(
-                `Comparte este enlace:\n\n${shareUrl}`
-            );
-        }
-    }
+    // Abrir automáticamente el perfil del creador
+    openProfile(creator);
 }
+
+openSharedCreatorFromUrl();

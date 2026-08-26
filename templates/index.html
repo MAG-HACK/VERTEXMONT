@@ -2,7 +2,6 @@
 <html lang="es">
 
 <head>
-
     <meta charset="UTF-8">
 
     <meta
@@ -16,12 +15,9 @@
         rel="stylesheet"
         href="{{ url_for('static', filename='style.css') }}"
     >
-
 </head>
 
-
 <body>
-
 
 <!-- =================================
      NAVBAR
@@ -32,18 +28,15 @@
     <div class="brand">
 
         <div class="vertex-logo">
-
             <span></span>
             <span></span>
-
         </div>
 
         <span>
-             VERTEXMONT
+            VERTEXMONT
         </span>
 
     </div>
-
 
     <button
         class="menu-button"
@@ -64,8 +57,8 @@
 <div class="admin-bar">
 
     <button onclick="openChangePassword(); closeMenu()">
-    🔑 Cambiar contraseña
-</button>
+        🔑 Cambiar contraseña
+    </button>
 
     <span>
         Modo administración
@@ -97,11 +90,8 @@
         </h1>
 
         <p>
-            Descubre los creadores de  VERTEXMONT
+            Descubre los creadores de VERTEXMONT
         </p>
-
-
-        <!-- BUSCADOR -->
 
         <div class="search-container">
 
@@ -120,9 +110,6 @@
 
     </section>
 
-
-    <!-- AQUÍ SOLO ESTÁN LOS CREADORES -->
-    <!-- NO HAY ALL A B C D -->
 
     <section
         id="creatorGrid"
@@ -151,13 +138,10 @@
             ×
         </button>
 
-
         <h2>
             Opciones
         </h2>
 
-
-        <!-- APARIENCIA -->
 
         <section class="menu-section">
 
@@ -165,31 +149,20 @@
                 Apariencia
             </h3>
 
-
             <button onclick="setTheme('light')">
-
                 ☀️ Tema claro
-
             </button>
-
 
             <button onclick="setTheme('dark')">
-
                 🌙 Tema oscuro
-
             </button>
 
-
             <button onclick="setTheme('system')">
-
                 ◐ Automático
-
             </button>
 
         </section>
 
-
-        <!-- ORDEN -->
 
         <section class="menu-section">
 
@@ -197,38 +170,24 @@
                 Ordenar creadores
             </h3>
 
-
             <button onclick="sortCreators('az')">
-
                 A → Z
-
             </button>
-
 
             <button onclick="sortCreators('za')">
-
                 Z → A
-
             </button>
-
 
             <button onclick="sortCreators('followers')">
-
                 Más seguidores
-
             </button>
 
-
             <button onclick="sortCreators('views')">
-
                 Más vistas
-
             </button>
 
         </section>
 
-
-        <!-- ADMIN -->
 
         <section class="menu-section">
 
@@ -236,25 +195,18 @@
                 Administración
             </h3>
 
-
             {% if admin %}
 
             <button
                 class="admin-button"
                 onclick="openCreator(); closeMenu()"
             >
-
                 ＋ Agregar creador
-
             </button>
-
 
             <button onclick="logout()">
-
                 Cerrar sesión
-
             </button>
-
 
             {% else %}
 
@@ -262,9 +214,7 @@
                 class="admin-button"
                 onclick="openLogin(); closeMenu()"
             >
-
                 🔐 Iniciar sesión
-
             </button>
 
             {% endif %}
@@ -294,23 +244,17 @@
             ×
         </button>
 
-
         <div class="modal-icon">
-
             🔐
-
         </div>
-
 
         <h2>
             Administración
         </h2>
 
-
         <p>
             Inicia sesión para modificar el catálogo.
         </p>
-
 
         <form
             id="loginForm"
@@ -327,7 +271,6 @@
                 required
             >
 
-
             <label>
                 Contraseña
             </label>
@@ -338,14 +281,11 @@
                 required
             >
 
-
             <button
                 class="primary-button"
                 type="submit"
             >
-
                 Iniciar sesión
-
             </button>
 
         </form>
@@ -373,21 +313,15 @@
             ×
         </button>
 
-
         <h2 id="creatorModalTitle">
-
             Agregar creador
-
         </h2>
-
 
         <p>
             Completa los datos manualmente
             o importa un CSV.
         </p>
 
-
-        <!-- CSV -->
 
         <div class="csv-import-box">
 
@@ -433,9 +367,7 @@
                     class="csv-example"
                     onclick="downloadCsvExample()"
                 >
-
                     Descargar ejemplo
-
                 </button>
 
             </div>
@@ -449,13 +381,10 @@
         </div>
 
 
-        <!-- FORMULARIO -->
-
         <form
             id="creatorForm"
             enctype="multipart/form-data"
         >
-
 
             <div class="form-grid">
 
@@ -675,7 +604,6 @@
 
                 </div>
 
-
             </div>
 
 
@@ -686,19 +614,14 @@
                     class="secondary-button"
                     onclick="closeCreator()"
                 >
-
                     Cancelar
-
                 </button>
-
 
                 <button
                     type="submit"
                     class="primary-button"
                 >
-
                     Guardar creador
-
                 </button>
 
             </div>
@@ -725,14 +648,11 @@
             onclick="closeProfile()"
             class="back-button"
         >
-
             ← Volver
-
         </button>
 
-
         <strong>
-             VERTEXMONT
+            VERTEXMONT
         </strong>
 
     </header>
@@ -748,40 +668,28 @@
                 class="profile-photo"
             >
 
-
             <div>
 
                 <h1 id="profileName">
-
                     —
-
                 </h1>
 
-
                 <p id="profileHandle">
-
                     —
-
                 </p>
-
 
                 <span
                     id="profileCategory"
                     class="category"
                 >
-
                     —
-
                 </span>
-
 
                 <span
                     id="profileCountry"
                     class="category"
                 >
-
                     —
-
                 </span>
 
             </div>
@@ -793,124 +701,44 @@
 
         <div class="stats-grid">
 
-
             <div class="stat-card">
-
-                <span>
-                    Seguidores
-                </span>
-
-                <strong id="profileFollowers">
-
-                    —
-
-                </strong>
-
+                <span>Seguidores</span>
+                <strong id="profileFollowers">—</strong>
             </div>
 
-
             <div class="stat-card">
-
-                <span>
-                    Likes
-                </span>
-
-                <strong id="profileLikes">
-
-                    —
-
-                </strong>
-
+                <span>Likes</span>
+                <strong id="profileLikes">—</strong>
             </div>
 
-
             <div class="stat-card">
-
-                <span>
-                    Vistas promedio
-                </span>
-
-                <strong id="profileViews">
-
-                    —
-
-                </strong>
-
+                <span>Vistas promedio</span>
+                <strong id="profileViews">—</strong>
             </div>
 
-
             <div class="stat-card">
-
-                <span>
-                    Videos
-                </span>
-
-                <strong id="profileVideos">
-
-                    —
-
-                </strong>
-
+                <span>Videos</span>
+                <strong id="profileVideos">—</strong>
             </div>
 
-
             <div class="stat-card">
-
-                <span>
-                    Engagement
-                </span>
-
-                <strong id="profileEngagement">
-
-                    —
-
-                </strong>
-
+                <span>Engagement</span>
+                <strong id="profileEngagement">—</strong>
             </div>
 
-
             <div class="stat-card">
-
-                <span>
-                    Likes promedio
-                </span>
-
-                <strong id="profileAverageLikes">
-
-                    —
-
-                </strong>
-
+                <span>Likes promedio</span>
+                <strong id="profileAverageLikes">—</strong>
             </div>
 
-
             <div class="stat-card">
-
-                <span>
-                    Comentarios promedio
-                </span>
-
-                <strong id="profileAverageComments">
-
-                    —
-
-                </strong>
-
+                <span>Comentarios promedio</span>
+                <strong id="profileAverageComments">—</strong>
             </div>
 
-
             <div class="stat-card">
-
-                <span>
-                    Compartidos promedio
-                </span>
-
-                <strong id="profileAverageShares">
-
-                    —
-
-                </strong>
-
+                <span>Compartidos promedio</span>
+                <strong id="profileAverageShares">—</strong>
             </div>
 
         </div>
@@ -926,16 +754,21 @@
 
             <div id="socialLinks"></div>
 
-            <div class="profile-actions">
-    <button
-        class="primary-button"
-        onclick="shareCurrentCreator()"
-    >
-        🔗 Compartir perfil
-    </button>
-</div>
-
         </section>
+
+
+        <!-- COMPARTIR -->
+
+        <div class="profile-actions">
+
+            <button
+                class="primary-button"
+                onclick="shareCurrentCreator()"
+            >
+                🔗 Compartir perfil
+            </button>
+
+        </div>
 
 
         {% if admin %}
@@ -946,33 +779,31 @@
                 class="primary-button"
                 onclick="editCurrentCreator()"
             >
-
                 Editar creador
-
             </button>
-
 
             <button
                 class="danger-button"
                 onclick="deleteCurrentCreator()"
             >
-
                 Eliminar
-
             </button>
 
         </div>
 
         {% endif %}
 
-<div class="profile-actions">
 
-    <button
-        class="primary-button"
-        onclick="requestCreator()"
-    >
-        📩 Solicitar creador
-    </button>
+        <div class="profile-actions">
+
+            <button
+                class="primary-button"
+                onclick="requestCreator()"
+            >
+                📩 Solicitar creador
+            </button>
+
+        </div>
 
     </main>
 
@@ -995,24 +826,13 @@
 
 
 <script>
-
-const VERTEX_DATA =
-    JSON.parse(
-        document.getElementById(
-            "vertex-data"
-        ).textContent
+    const VERTEX_DATA = JSON.parse(
+        document.getElementById("vertex-data").textContent
     );
 
-const creators =
-    VERTEX_DATA.creators;
-
-const IS_ADMIN =
-    VERTEX_DATA.admin;
-
+    const creators = VERTEX_DATA.creators;
+    const IS_ADMIN = VERTEX_DATA.admin;
 </script>
-
-
-
 <!-- =================================
      CAMBIAR CONTRASEÑA
 ================================= -->
@@ -1021,6 +841,7 @@ const IS_ADMIN =
     id="changePasswordModal"
     class="modal"
 >
+
     <div class="modal-box small">
 
         <button
@@ -1103,9 +924,11 @@ const IS_ADMIN =
         </form>
 
     </div>
+
 </div>
+
+
 <script src="{{ url_for('static', filename='app.js') }}"></script>
 
 </body>
-
 </html>

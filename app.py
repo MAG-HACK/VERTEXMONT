@@ -1,4 +1,3 @@
-
 from flask import (
     Flask,
     render_template,
@@ -8,23 +7,19 @@ from flask import (
     session,
     jsonify
 )
-
 import os
 import uuid
 import requests
-
 from werkzeug.security import (
     check_password_hash,
     generate_password_hash
 )
-
 from werkzeug.utils import secure_filename
 
 
 # ============================================================
 # APP
 # ============================================================
-
 app = Flask(__name__)
 
 app.secret_key = os.environ.get(
@@ -38,7 +33,6 @@ app.permanent_session_lifetime = 60 * 60 * 24 * 7
 # ============================================================
 # SUPABASE
 # ============================================================
-
 SUPABASE_URL = os.environ.get(
     "SUPABASE_URL",
     ""
@@ -68,7 +62,6 @@ ADMIN_TABLE = os.environ.get(
 # ============================================================
 # ADMIN
 # ============================================================
-
 ADMIN_USERNAME = "admin"
 DEFAULT_ADMIN_PASSWORD = "admin123"
 
@@ -76,7 +69,6 @@ DEFAULT_ADMIN_PASSWORD = "admin123"
 # ============================================================
 # VALIDAR CONFIGURACIÓN
 # ============================================================
-
 def supabase_configured():
     return bool(
         SUPABASE_URL
@@ -87,7 +79,6 @@ def supabase_configured():
 # ============================================================
 # HEADERS SUPABASE
 # ============================================================
-
 def supabase_headers():
     return {
         "apikey": SUPABASE_KEY,
@@ -99,7 +90,6 @@ def supabase_headers():
 # ============================================================
 # URL TABLA SUPABASE
 # ============================================================
-
 def table_url(table_name):
     return (
         f"{SUPABASE_URL}/rest/v1/{table_name}"
@@ -109,7 +99,6 @@ def table_url(table_name):
 # ============================================================
 # ERROR SUPABASE
 # ============================================================
-
 def supabase_error(response):
     try:
         return response.text
@@ -120,7 +109,6 @@ def supabase_error(response):
 # ============================================================
 # GET CREADORES
 # ============================================================
-
 def load_creators():
     if not supabase_configured():
         print("ERROR: Supabase no está configurado.")
@@ -169,7 +157,6 @@ def load_creators():
 # ============================================================
 # NORMALIZAR HANDLE
 # ============================================================
-
 def normalize_handle(value):
     value = str(value or "").strip()
 
@@ -198,7 +185,6 @@ def normalize_handle(value):
 # ============================================================
 # URL TIKTOK
 # ============================================================
-
 def get_tiktok_url(value):
     handle = normalize_handle(value)
 
@@ -216,7 +202,6 @@ def get_tiktok_url(value):
 # ============================================================
 # PASSWORD HASH
 # ============================================================
-
 def is_password_hash(value):
     value = str(value or "")
 
@@ -230,7 +215,6 @@ def is_password_hash(value):
 # ============================================================
 # VERIFICAR PASSWORD
 # ============================================================
-
 def verify_password(
     stored_password,
     entered_password
@@ -266,7 +250,6 @@ def verify_password(
 # ============================================================
 # CARGAR ADMIN
 # ============================================================
-
 def load_admin():
     if not supabase_configured():
         print(
@@ -315,7 +298,6 @@ def load_admin():
 # ============================================================
 # GUARDAR PASSWORD ADMIN
 # ============================================================
-
 def save_admin_password(new_password):
     admin_data = load_admin()
 
@@ -365,7 +347,6 @@ def save_admin_password(new_password):
 # ============================================================
 # STORAGE — URL PÚBLICA
 # ============================================================
-
 def storage_public_url(path):
     if not path:
         return ""
@@ -379,7 +360,6 @@ def storage_public_url(path):
 # ============================================================
 # STORAGE — SUBIR FOTO
 # ============================================================
-
 def upload_photo(file):
     if not file:
         return ""
@@ -408,7 +388,6 @@ def upload_photo(file):
             "Usa JPG, JPEG, PNG o WEBP."
         )
 
-    # UUID para evitar colisiones
     filename = (
         str(uuid.uuid4())
         + extension
@@ -467,7 +446,6 @@ def upload_photo(file):
 # ============================================================
 # STORAGE — ELIMINAR FOTO
 # ============================================================
-
 def delete_photo(storage_path):
     if not storage_path:
         return True
@@ -516,10 +494,10 @@ def delete_photo(storage_path):
 # ============================================================
 # OBTENER IDENTIFICADOR DEL CREADOR
 # ============================================================
-
 def find_creator_filter(creator_id):
     """
     Permite trabajar tanto con:
+
     - id bigint
     - creator_uuid uuid
 
@@ -559,7 +537,6 @@ def find_creator_filter(creator_id):
 # ============================================================
 # BUSCAR CREADOR
 # ============================================================
-
 def get_creator(creator_id):
     creator_filter = find_creator_filter(
         creator_id
@@ -613,10 +590,8 @@ def get_creator(creator_id):
 # ============================================================
 # INICIO
 # ============================================================
-
 @app.route("/")
 def index():
-
     creators = load_creators()
 
     admin = session.get(
@@ -627,14 +602,14 @@ def index():
     return render_template(
         "index.html",
         creators=creators,
-        admin=admin
+        admin=admin,
+        shared_creator=None
     )
 
 
 # ============================================================
 # LOGIN
 # ============================================================
-
 @app.route(
     "/login",
     methods=["POST"]
@@ -701,17 +676,14 @@ def login():
             stored_password
         )
     ):
-
         save_admin_password(
             password
         )
 
     if password_correct:
-
         session.clear()
 
         session["admin"] = True
-
         session.permanent = True
 
         print(
@@ -735,7 +707,6 @@ def login():
 # ============================================================
 # CAMBIAR CONTRASEÑA
 # ============================================================
-
 @app.route(
     "/change-password",
     methods=["POST"]
@@ -768,7 +739,6 @@ def change_password():
     )
 
     if request.is_json:
-
         json_data = (
             request.get_json(
                 silent=True
@@ -898,7 +868,6 @@ def change_password():
 # ============================================================
 # LOGOUT
 # ============================================================
-
 @app.route(
     "/logout",
     methods=["POST"]
@@ -915,7 +884,6 @@ def logout():
 # ============================================================
 # AGREGAR CREADOR
 # ============================================================
-
 @app.route(
     "/api/creator",
     methods=["POST"]
@@ -949,16 +917,13 @@ def add_creator():
     # ========================================================
 
     photo_url = ""
-
     photo_storage_path = ""
 
     try:
-
         if (
             "photo" in request.files
             and request.files["photo"].filename
         ):
-
             photo_storage_path = upload_photo(
                 request.files["photo"]
             )
@@ -968,7 +933,6 @@ def add_creator():
             )
 
     except Exception as error:
-
         return jsonify({
             "error":
                 f"No se pudo subir la foto: {error}"
@@ -1104,11 +1068,14 @@ def add_creator():
 
         response = requests.post(
             table_url(CREATORS_TABLE),
+
             headers={
                 **supabase_headers(),
                 "Prefer": "return=representation"
             },
+
             json=creator,
+
             timeout=30
         )
 
@@ -1116,6 +1083,7 @@ def add_creator():
 
             # Si falló DB después de subir foto,
             # intentamos eliminar la foto para no dejar basura.
+
             if photo_storage_path:
                 delete_photo(
                     photo_storage_path
@@ -1150,7 +1118,6 @@ def add_creator():
 # ============================================================
 # EDITAR CREADOR
 # ============================================================
-
 @app.route(
     "/api/creator/<creator_id>",
     methods=["POST"]
@@ -1301,14 +1268,18 @@ def edit_creator(creator_id):
 
         response = requests.patch(
             table_url(CREATORS_TABLE),
+
             headers={
                 **supabase_headers(),
                 "Prefer": "return=representation"
             },
+
             params={
                 column: f"eq.{value}"
             },
+
             json=update_data,
+
             timeout=30
         )
 
@@ -1345,7 +1316,6 @@ def edit_creator(creator_id):
                 )
 
         if isinstance(data, list) and data:
-
             return jsonify(data[0])
 
         updated_creator = {
@@ -1373,7 +1343,6 @@ def edit_creator(creator_id):
 # ============================================================
 # ELIMINAR CREADOR
 # ============================================================
-
 @app.route(
     "/api/creator/<creator_id>",
     methods=["DELETE"]
@@ -1416,18 +1385,20 @@ def delete_creator(creator_id):
 
         response = requests.delete(
             table_url(CREATORS_TABLE),
+
             headers={
                 **supabase_headers(),
                 "Prefer": "return=minimal"
             },
+
             params={
                 column: f"eq.{value}"
             },
+
             timeout=30
         )
 
         if not response.ok:
-
             return jsonify({
                 "error":
                     "No se pudo eliminar el creador: "
@@ -1463,14 +1434,12 @@ def delete_creator(creator_id):
 # ============================================================
 # HEALTH CHECK
 # ============================================================
-
 @app.route(
     "/health"
 )
 def health():
 
     if not supabase_configured():
-
         return jsonify({
             "status": "error",
             "supabase": False
@@ -1480,14 +1449,17 @@ def health():
 
         response = requests.get(
             table_url(CREATORS_TABLE),
+
             headers={
                 **supabase_headers(),
                 "Accept": "application/json"
             },
+
             params={
                 "select": "id",
                 "limit": "1"
             },
+
             timeout=10
         )
 
@@ -1515,31 +1487,44 @@ def health():
             "message": str(error)
         }), 500
 
+
 # ============================================================
 # PERFIL PÚBLICO DEL CREADOR
 # ============================================================
 @app.route("/creator/<creator_uuid>")
 def public_creator(creator_uuid):
+
     try:
         uuid.UUID(creator_uuid)
+
     except ValueError:
         return "Enlace de creador inválido.", 404
 
-    creator = get_creator(creator_uuid)
+    creator = get_creator(
+        creator_uuid
+    )
 
     if not creator:
         return "Creador no encontrado.", 404
 
     return render_template(
         "index.html",
+
         creators=[creator],
+
         admin=False,
+
+        # IMPORTANTE:
+        # Se manda el creador seleccionado
+        # al HTML para que pueda abrirse
+        # automáticamente.
         shared_creator=creator
     )
+
+
 # ============================================================
 # EJECUTAR
 # ============================================================
-
 if __name__ == "__main__":
 
     print()
@@ -1578,4 +1563,3 @@ if __name__ == "__main__":
     app.run(
         debug=False
     )
-
