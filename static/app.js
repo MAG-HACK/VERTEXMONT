@@ -189,6 +189,17 @@ function openProfile(creator) {
     document
         .getElementById("profileModal")
         .classList.add("open");
+        
+   const profilePageViews =
+    document.getElementById("profilePageViews");
+
+if (profilePageViews) {
+
+    profilePageViews.textContent =
+        creator.profile_views || "0";
+}
+
+
 }
 
 
