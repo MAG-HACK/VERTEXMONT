@@ -198,7 +198,7 @@ function closeProfile() {
     // como /creator/UUID, regresar siempre a la página principal
     if (SHARED_CREATOR) {
         window.location.href =
-            "https://vertexmont.onrender.com/";
+            "https://vertexmont.onrender.com";
         return;
     }
 
