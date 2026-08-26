@@ -1,3 +1,4 @@
+
 let creatorList = [...creators];
 
 let currentCreator = null;
@@ -9,9 +10,7 @@ const PLACEHOLDER =
 // =========================================
 // MOSTRAR CREADORES
 // =========================================
-
 function renderCreators() {
-
     const grid =
         document.getElementById("creatorGrid");
 
@@ -24,7 +23,6 @@ function renderCreators() {
 
     const filtered =
         creatorList.filter(creator => {
-
             const name =
                 String(creator.name || "")
                     .toLowerCase();
@@ -42,19 +40,16 @@ function renderCreators() {
     grid.innerHTML = "";
 
     if (!filtered.length) {
-
         grid.innerHTML = `
             <div class="empty">
                 <h3>No encontramos creadores</h3>
                 <p>Busca otro creador.</p>
             </div>
         `;
-
         return;
     }
 
     filtered.forEach(creator => {
-
         const card =
             document.createElement("article");
 
@@ -71,7 +66,6 @@ function renderCreators() {
             >
 
             <div class="creator-info">
-
                 <h3>
                     ${escapeHtml(
                         creator.name || "Sin nombre"
@@ -85,7 +79,6 @@ function renderCreators() {
                 </div>
 
                 <div class="card-stats">
-
                     <span class="stat-pill">
                         👥 ${escapeHtml(
                             creator.followers || "—"
@@ -97,9 +90,7 @@ function renderCreators() {
                             creator.views || "—"
                         )}
                     </span>
-
                 </div>
-
             </div>
         `;
 
@@ -108,7 +99,6 @@ function renderCreators() {
         };
 
         grid.appendChild(card);
-
     });
 }
 
@@ -116,9 +106,7 @@ function renderCreators() {
 // =========================================
 // PERFIL
 // =========================================
-
 function openProfile(creator) {
-
     currentCreator = creator;
 
     document.getElementById("profilePhoto").src =
@@ -190,13 +178,11 @@ function openProfile(creator) {
 
 
     if (!socials.innerHTML) {
-
         socials.innerHTML = `
             <span class="handle">
                 No hay redes agregadas.
             </span>
         `;
-
     }
 
 
@@ -207,20 +193,16 @@ function openProfile(creator) {
 
 
 function closeProfile() {
-
     document
         .getElementById("profileModal")
         .classList.remove("open");
-
 }
 
 
 // =========================================
 // COMPARTIR PERFIL
 // =========================================
-
 async function shareCurrentCreator() {
-
     if (!currentCreator) {
         return;
     }
@@ -229,11 +211,9 @@ async function shareCurrentCreator() {
         currentCreator.creator_uuid;
 
     if (!creatorUuid) {
-
         alert(
             "Este creador no tiene un enlace público disponible."
         );
-
         return;
     }
 
@@ -243,7 +223,6 @@ async function shareCurrentCreator() {
 
 
     const shareData = {
-
         title:
             currentCreator.name ||
             "Creador de VERTEXMONT",
@@ -255,17 +234,14 @@ async function shareCurrentCreator() {
             } en VERTEXMONT.`,
 
         url: shareUrl
-
     };
 
 
     try {
-
         if (
             navigator.share &&
             window.isSecureContext
         ) {
-
             await navigator.share(
                 shareData
             );
@@ -278,7 +254,6 @@ async function shareCurrentCreator() {
             navigator.clipboard &&
             window.isSecureContext
         ) {
-
             await navigator.clipboard.writeText(
                 shareUrl
             );
@@ -308,7 +283,6 @@ async function shareCurrentCreator() {
         );
 
         textarea.focus();
-
         textarea.select();
 
         document.execCommand(
@@ -345,14 +319,12 @@ async function shareCurrentCreator() {
 // =========================================
 // REDES SOCIALES
 // =========================================
-
 function addSocial(
     container,
     name,
     value,
     platform
 ) {
-
     if (!value) return;
 
     const url =
@@ -377,12 +349,10 @@ function addSocial(
 // =========================================
 // URL RED SOCIAL
 // =========================================
-
 function getSocialUrl(
     value,
     platform
 ) {
-
     let username =
         String(value || "")
             .trim();
@@ -408,7 +378,6 @@ function getSocialUrl(
 
 
     if (platform === "tiktok") {
-
         return (
             "https://www.tiktok.com/@" +
             username
@@ -417,7 +386,6 @@ function getSocialUrl(
 
 
     if (platform === "instagram") {
-
         return (
             "https://www.instagram.com/" +
             username +
@@ -433,7 +401,6 @@ function getSocialUrl(
                 .trim()
                 .startsWith("@")
         ) {
-
             return (
                 "https://www.youtube.com/@" +
                 username
@@ -455,56 +422,43 @@ function getSocialUrl(
 // =========================================
 // MENÚ
 // =========================================
-
 function openMenu() {
-
     document
         .getElementById("menuOverlay")
         .classList.add("open");
-
 }
 
 
 function closeMenu() {
-
     document
         .getElementById("menuOverlay")
         .classList.remove("open");
-
 }
 
 
 function closeMenuOutside(event) {
-
     if (
         event.target.id === "menuOverlay"
     ) {
-
         closeMenu();
-
     }
-
 }
 
 
 // =========================================
 // TEMAS
 // =========================================
-
 function setTheme(theme) {
-
     localStorage.setItem(
         "vertex-theme",
         theme
     );
 
     applyTheme();
-
 }
 
 
 function applyTheme() {
-
     const theme =
         localStorage.getItem(
             "vertex-theme"
@@ -512,7 +466,6 @@ function applyTheme() {
 
 
     if (theme === "dark") {
-
         document.documentElement
             .setAttribute(
                 "data-theme",
@@ -524,7 +477,6 @@ function applyTheme() {
 
 
     if (theme === "light") {
-
         document.documentElement
             .setAttribute(
                 "data-theme",
@@ -548,18 +500,15 @@ function applyTheme() {
                 ? "dark"
                 : "light"
         );
-
 }
 
 
 // =========================================
 // ORDENAR
 // =========================================
-
 function sortCreators(type) {
 
     if (type === "az") {
-
         creatorList.sort(
             (a, b) =>
                 String(a.name || "")
@@ -567,12 +516,10 @@ function sortCreators(type) {
                         String(b.name || "")
                     )
         );
-
     }
 
 
     if (type === "za") {
-
         creatorList.sort(
             (a, b) =>
                 String(b.name || "")
@@ -580,41 +527,34 @@ function sortCreators(type) {
                         String(a.name || "")
                     )
         );
-
     }
 
 
     if (type === "followers") {
-
         creatorList.sort(
             (a, b) =>
                 numberValue(b.followers) -
                 numberValue(a.followers)
         );
-
     }
 
 
     if (type === "views") {
-
         creatorList.sort(
             (a, b) =>
                 numberValue(b.views) -
                 numberValue(a.views)
         );
-
     }
 
 
     renderCreators();
 
     closeMenu();
-
 }
 
 
 function numberValue(value) {
-
     if (!value) return 0;
 
     return (
@@ -625,58 +565,46 @@ function numberValue(value) {
         )
         || 0
     );
-
 }
 
 
 // =========================================
 // LOGIN
 // =========================================
-
 function openLogin() {
-
     document
         .getElementById("loginModal")
         .classList.add("open");
-
 }
 
 
 function closeLogin() {
-
     document
         .getElementById("loginModal")
         .classList.remove("open");
-
 }
 
 
 function logout() {
-
     const form =
         document.createElement("form");
 
     form.method = "POST";
-
     form.action = "/logout";
 
     document.body.appendChild(form);
 
     form.submit();
-
 }
 
 
 // =========================================
 // AGREGAR / EDITAR
 // =========================================
-
 function openCreator(creator = null) {
 
     if (!IS_ADMIN) {
-
         openLogin();
-
         return;
     }
 
@@ -688,6 +616,7 @@ function openCreator(creator = null) {
         document.getElementById(
             "creatorModal"
         );
+
 
     const form =
         document.getElementById(
@@ -711,6 +640,7 @@ function openCreator(creator = null) {
             "csvStatus"
         );
 
+
     status.textContent = "";
 
     status.className =
@@ -720,7 +650,6 @@ function openCreator(creator = null) {
     if (creator) {
 
         const fields = [
-
             "name",
             "handle",
             "category",
@@ -736,7 +665,6 @@ function openCreator(creator = null) {
             "average_likes",
             "average_comments",
             "average_shares"
-
         ];
 
 
@@ -755,23 +683,19 @@ function openCreator(creator = null) {
 
 
     modal.classList.add("open");
-
 }
 
 
 function closeCreator() {
-
     document
         .getElementById("creatorModal")
         .classList.remove("open");
-
 }
 
 
 // =========================================
 // GUARDAR
 // =========================================
-
 document
     .getElementById("creatorForm")
     .addEventListener(
@@ -846,7 +770,6 @@ document
             closeCreator();
 
             renderCreators();
-
         }
     );
 
@@ -854,7 +777,6 @@ document
 // =========================================
 // IMPORTAR CSV
 // =========================================
-
 const csvFile =
     document.getElementById("csvFile");
 
@@ -925,9 +847,7 @@ async function handleCsv(event) {
 
 
             if (key) {
-
                 data[key] = value;
-
             }
 
         });
@@ -985,7 +905,6 @@ async function handleCsv(event) {
             average_shares:
                 data.averageshares ||
                 ""
-
         };
 
 
@@ -1003,10 +922,8 @@ async function handleCsv(event) {
             handle.value &&
             !handle.value.startsWith("@")
         ) {
-
             handle.value =
                 "@" + handle.value;
-
         }
 
 
@@ -1025,9 +942,7 @@ async function handleCsv(event) {
 
         status.className =
             "csv-status error";
-
     }
-
 }
 
 
@@ -1045,7 +960,6 @@ function normalizeCsvHeader(header) {
             /[^a-z0-9]/g,
             ""
         );
-
 }
 
 
@@ -1070,7 +984,6 @@ function fillCreatorForm(data) {
 
             }
         );
-
 }
 
 
@@ -1079,9 +992,7 @@ function parseCSV(text) {
     const rows = [];
 
     let row = [];
-
     let value = "";
-
     let insideQuotes = false;
 
 
@@ -1092,7 +1003,6 @@ function parseCSV(text) {
     ) {
 
         const char = text[i];
-
         const next = text[i + 1];
 
 
@@ -1107,7 +1017,6 @@ function parseCSV(text) {
             i++;
 
             continue;
-
         }
 
 
@@ -1117,7 +1026,6 @@ function parseCSV(text) {
                 !insideQuotes;
 
             continue;
-
         }
 
 
@@ -1131,7 +1039,6 @@ function parseCSV(text) {
             value = "";
 
             continue;
-
         }
 
 
@@ -1148,9 +1055,7 @@ function parseCSV(text) {
                 char === "\r" &&
                 next === "\n"
             ) {
-
                 i++;
-
             }
 
 
@@ -1165,21 +1070,17 @@ function parseCSV(text) {
                         cell.trim() !== ""
                 )
             ) {
-
                 rows.push(row);
-
             }
 
 
             row = [];
 
             continue;
-
         }
 
 
         value += char;
-
     }
 
 
@@ -1191,19 +1092,16 @@ function parseCSV(text) {
         row.push(value);
 
         rows.push(row);
-
     }
 
 
     return rows;
-
 }
 
 
 // =========================================
 // CSV EJEMPLO
 // =========================================
-
 function downloadCsvExample() {
 
     const csv =
@@ -1251,31 +1149,29 @@ Average Shares,2881`;
     link.remove();
 
     URL.revokeObjectURL(url);
-
 }
 
 
 // =========================================
 // EDITAR
 // =========================================
-
 function editCurrentCreator() {
 
     if (!currentCreator) return;
 
+
     closeProfile();
+
 
     openCreator(
         currentCreator
     );
-
 }
 
 
 // =========================================
 // ELIMINAR
 // =========================================
-
 async function deleteCurrentCreator() {
 
     if (!currentCreator) return;
@@ -1306,7 +1202,6 @@ async function deleteCurrentCreator() {
         );
 
         return;
-
     }
 
 
@@ -1323,50 +1218,41 @@ async function deleteCurrentCreator() {
     closeProfile();
 
     renderCreators();
-
 }
 
 
 // =========================================
 // SEGURIDAD HTML
 // =========================================
-
 function escapeHtml(value) {
 
     return String(value || "")
-
         .replaceAll(
             "&",
             "&amp;"
         )
-
         .replaceAll(
             "<",
             "&lt;"
         )
-
         .replaceAll(
             ">",
             "&gt;"
         )
-
         .replaceAll(
             '"',
             "&quot;"
         )
-
         .replaceAll(
             "'",
             "&#039;"
         );
-
 }
 
 
 // =========================================
 // INICIAR
 // =========================================
-
 applyTheme();
 
 renderCreators();
@@ -1375,39 +1261,91 @@ renderCreators();
 // =========================================
 // ABRIR PERFIL COMPARTIDO
 // =========================================
-
+//
+// IMPORTANTE:
+// Si Flask envía SHARED_CREATOR al entrar
+// mediante /creator/<uuid>, se abre
+// directamente el perfil.
+//
+// No se muestra primero el catálogo.
+// =========================================
 if (SHARED_CREATOR) {
 
     const sharedCreator =
         creatorList.find(
             creator =>
-                creator.creator_uuid ===
-                SHARED_CREATOR.creator_uuid
+                String(
+                    creator.creator_uuid
+                ) ===
+                String(
+                    SHARED_CREATOR.creator_uuid
+                )
         );
 
 
     if (sharedCreator) {
 
-        setTimeout(
-            () => {
-
-                openProfile(
-                    sharedCreator
-                );
-
-            },
-            100
+        openProfile(
+            sharedCreator
         );
 
+    } else {
+
+        // Si SHARED_CREATOR viene completo
+        // desde Flask pero no coincide con
+        // creatorList, usamos directamente
+        // el objeto enviado por el servidor.
+
+        openProfile(
+            SHARED_CREATOR
+        );
+    }
+}
+
+
+// =========================================
+// ABRIR CREADOR DESDE ?creator=
+// =========================================
+function openSharedCreatorFromUrl() {
+
+    const params =
+        new URLSearchParams(
+            window.location.search
+        );
+
+
+    const creatorId =
+        params.get("creator");
+
+
+    if (!creatorId) {
+        return;
     }
 
+
+    const creator =
+        creatorList.find(
+            creator =>
+                String(creator.id) ===
+                String(creatorId)
+        );
+
+
+    if (!creator) {
+        return;
+    }
+
+
+    openProfile(creator);
 }
+
+
+openSharedCreatorFromUrl();
 
 
 // =========================================
 // CAMBIAR CONTRASEÑA
 // =========================================
-
 function openChangePassword() {
 
     if (!IS_ADMIN) {
@@ -1415,7 +1353,6 @@ function openChangePassword() {
         openLogin();
 
         return;
-
     }
 
 
@@ -1424,10 +1361,12 @@ function openChangePassword() {
             "changePasswordModal"
         );
 
+
     const form =
         document.getElementById(
             "changePasswordForm"
         );
+
 
     const status =
         document.getElementById(
@@ -1446,19 +1385,19 @@ function openChangePassword() {
         );
 
         return;
-
     }
 
 
     form.reset();
+
 
     status.textContent = "";
 
     status.className =
         "csv-status";
 
-    modal.classList.add("open");
 
+    modal.classList.add("open");
 }
 
 
@@ -1475,7 +1414,6 @@ function closeChangePassword() {
         modal.classList.remove("open");
 
     }
-
 }
 
 
@@ -1499,10 +1437,12 @@ if (changePasswordForm) {
                     "changePasswordForm"
                 );
 
+
             const status =
                 document.getElementById(
                     "changePasswordStatus"
                 );
+
 
             const submitButton =
                 form.querySelector(
@@ -1574,7 +1514,6 @@ if (changePasswordForm) {
                         "csv-status error";
 
                     return;
-
                 }
 
 
@@ -1614,25 +1553,19 @@ if (changePasswordForm) {
                         "Cambiar contraseña";
 
                 }
-
             }
-
         }
     );
-
 }
 
 
 // =========================================
 // SOLICITAR CREADOR
 // =========================================
-
 function requestCreator() {
 
     if (!currentCreator) {
-
         return;
-
     }
 
 
@@ -1688,34 +1621,4 @@ Gracias.`;
 
     window.location.href =
         mailto;
-
 }
-
-// =========================================
-// ABRIR CREADOR DESDE ENLACE COMPARTIDO
-// =========================================
-
-function openSharedCreatorFromUrl() {
-    const params = new URLSearchParams(window.location.search);
-    const creatorId = params.get("creator");
-
-    if (!creatorId) {
-        return;
-    }
-
-    const creator = creatorList.find(
-        creator => String(creator.id) === String(creatorId)
-    );
-
-    if (!creator) {
-        return;
-    }
-
-    // Mostrar primero toda la lista
-    renderCreators();
-
-    // Abrir automáticamente el perfil del creador
-    openProfile(creator);
-}
-
-openSharedCreatorFromUrl();

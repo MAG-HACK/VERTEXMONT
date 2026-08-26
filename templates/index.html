@@ -1,14 +1,11 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
     <meta charset="UTF-8">
-
     <meta
         name="viewport"
         content="width=device-width, initial-scale=1.0"
     >
-
     <title>VERTEXMONT</title>
 
     <link
@@ -24,18 +21,13 @@
 ================================= -->
 
 <header class="navbar">
-
     <div class="brand">
-
         <div class="vertex-logo">
             <span></span>
             <span></span>
         </div>
 
-        <span>
-            VERTEXMONT
-        </span>
-
+        <span>VERTEXMONT</span>
     </div>
 
     <button
@@ -44,7 +36,6 @@
     >
         ☰
     </button>
-
 </header>
 
 
@@ -81,7 +72,7 @@
      CATÁLOGO
 ================================= -->
 
-<main>
+<main id="catalogMain">
 
     <section class="hero">
 
@@ -634,7 +625,7 @@
 
 
 <!-- =================================
-     PERFIL
+     PERFIL DEL CREADOR
 ================================= -->
 
 <div
@@ -666,6 +657,7 @@
             <img
                 id="profilePhoto"
                 class="profile-photo"
+                alt="Foto del creador"
             >
 
             <div>
@@ -939,6 +931,65 @@
 
 <script src="{{ url_for('static', filename='app.js') }}"></script>
 
-</body>
 
+<!-- =================================
+     ABRIR DIRECTAMENTE EL CREADOR
+================================= -->
+
+<script>
+
+document.addEventListener("DOMContentLoaded", function () {
+
+    if (!SHARED_CREATOR) {
+        return;
+    }
+
+    const creator = creators.find(
+        creator =>
+            String(creator.creator_uuid) ===
+            String(SHARED_CREATOR.creator_uuid)
+    );
+
+    if (!creator) {
+        return;
+    }
+
+    /*
+     * Ocultar completamente el catálogo
+     * cuando se entra mediante un enlace
+     * compartido.
+     */
+
+    const catalog = document.getElementById("catalogMain");
+
+    if (catalog) {
+        catalog.style.display = "none";
+    }
+
+    /*
+     * Ocultar también la barra de administración
+     * para que el perfil sea la pantalla principal.
+     */
+
+    const adminBar = document.querySelector(".admin-bar");
+
+    if (adminBar) {
+        adminBar.style.display = "none";
+    }
+
+    /*
+     * Abrir directamente el perfil.
+     */
+
+    setTimeout(function () {
+
+        openProfile(creator);
+
+    }, 50);
+
+});
+
+</script>
+
+</body>
 </html>
