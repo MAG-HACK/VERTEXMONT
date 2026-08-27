@@ -1,3 +1,4 @@
+
 from flask import (
     Flask,
     render_template,
@@ -5,8 +6,7 @@ from flask import (
     redirect,
     url_for,
     session,
-    jsonify,
-    Response
+    jsonify
 )
 import os
 import uuid
@@ -30,41 +30,6 @@ app.secret_key = os.environ.get(
 )
 
 app.permanent_session_lifetime = 60 * 60 * 24 * 7
-
-
-# ============================================================
-# TIKTOK DEVELOPER SITE VERIFICATION
-# ============================================================
-# TikTok necesita poder abrir este archivo directamente desde
-# la raíz del dominio.
-#
-# URL:
-# /tiktokzGD5rMHj70zgdd0iHjErWrfbCMo9cKLk.txt
-#
-# Contenido exacto:
-# tiktok-developers-site-verification=zGD5rMHj70zgdd0iHjErWrfbCMo9cKLk
-# ============================================================
-
-TIKTOK_VERIFICATION_FILENAME = (
-    "tiktokzGD5rMHj70zgdd0iHjErWrfbCMo9cKLk.txt"
-)
-
-TIKTOK_VERIFICATION_CONTENT = (
-    "tiktok-developers-site-verification="
-    "zGD5rMHj70zgdd0iHjErWrfbCMo9cKLk"
-)
-
-
-@app.route(
-    "/tiktokzGD5rMHj70zgdd0iHjErWrfbCMo9cKLk.txt",
-    methods=["GET"]
-)
-def tiktok_site_verification():
-    return Response(
-        TIKTOK_VERIFICATION_CONTENT,
-        status=200,
-        mimetype="text/plain"
-    )
 
 
 # ============================================================
@@ -133,9 +98,7 @@ def supabase_headers():
 # ============================================================
 
 def table_url(table_name):
-    return (
-        f"{SUPABASE_URL}/rest/v1/{table_name}"
-    )
+    return f"{SUPABASE_URL}/rest/v1/{table_name}"
 
 
 # ============================================================
@@ -291,7 +254,6 @@ def verify_password(
             )
             return False
 
-    # Compatibilidad con contraseña antigua
     return stored_password == entered_password
 
 
@@ -551,11 +513,8 @@ def delete_photo(storage_path):
 def find_creator_filter(creator_id):
     """
     Permite trabajar tanto con:
-
     - id bigint
     - creator_uuid uuid
-
-    Así no rompemos los creadores existentes.
     """
 
     creator_id = str(
@@ -565,7 +524,6 @@ def find_creator_filter(creator_id):
     if not creator_id:
         return None
 
-    # UUID
     try:
         uuid.UUID(creator_id)
 
@@ -576,7 +534,6 @@ def find_creator_filter(creator_id):
     except ValueError:
         pass
 
-    # bigint
     try:
         int(creator_id)
 
@@ -647,17 +604,10 @@ def get_creator(creator_id):
 # ============================================================
 
 def increment_site_views():
-    """
-    Suma una visita a la página principal.
-
-    Se guarda permanentemente en Supabase.
-    """
-
     if not supabase_configured():
         return
 
     try:
-        # Obtener contador actual
         response = requests.get(
             table_url("site_stats"),
             headers={
@@ -688,7 +638,6 @@ def increment_site_views():
             data[0].get("page_views") or 0
         )
 
-        # Sumar vista
         requests.patch(
             table_url("site_stats"),
             headers={
@@ -712,10 +661,6 @@ def increment_site_views():
 
 
 def get_site_views():
-    """
-    Obtiene el total de vistas de la página.
-    """
-
     if not supabase_configured():
         return 0
 
@@ -755,11 +700,9 @@ def get_site_views():
 
 
 def increment_creator_views(creator_id):
-    """
-    Suma una vista al perfil de un creador.
-    """
-
-    creator = get_creator(creator_id)
+    creator = get_creator(
+        creator_id
+    )
 
     if not creator:
         return
@@ -815,8 +758,6 @@ def increment_creator_views(creator_id):
 
 @app.route("/")
 def index():
-
-    # Contar una sola visita por sesión
     if not session.get("site_view_counted"):
         increment_site_views()
         session["site_view_counted"] = True
@@ -830,7 +771,6 @@ def index():
 
     site_views = 0
 
-    # Solo enviamos el contador al administrador
     if admin:
         site_views = get_site_views()
 
@@ -844,6 +784,24 @@ def index():
 
 
 # ============================================================
+# POLÍTICA DE PRIVACIDAD
+# ============================================================
+
+@app.route("/privacy")
+def privacy():
+    return render_template("privacy.html")
+
+
+# ============================================================
+# TÉRMINOS DE SERVICIO
+# ============================================================
+
+@app.route("/terms")
+def terms():
+    return render_template("terms.html")
+
+
+# ============================================================
 # LOGIN
 # ============================================================
 
@@ -852,7 +810,6 @@ def index():
     methods=["POST"]
 )
 def login():
-
     username = request.form.get(
         "username",
         ""
@@ -906,7 +863,6 @@ def login():
         password
     )
 
-    # Convertir contraseña antigua a hash
     if (
         password_correct
         and not is_password_hash(
@@ -918,11 +874,8 @@ def login():
         )
 
     if password_correct:
-
         session.clear()
-
         session["admin"] = True
-
         session.permanent = True
 
         print(
@@ -952,7 +905,6 @@ def login():
     methods=["POST"]
 )
 def change_password():
-
     if not session.get(
         "admin",
         False
@@ -979,7 +931,6 @@ def change_password():
     )
 
     if request.is_json:
-
         json_data = (
             request.get_json(
                 silent=True
@@ -1072,7 +1023,6 @@ def change_password():
                 "No se pudo guardar la nueva contraseña."
         }), 500
 
-    # Verificación
     verify_data = load_admin()
 
     if not verify_data:
@@ -1115,7 +1065,6 @@ def change_password():
     methods=["POST"]
 )
 def logout():
-
     session.clear()
 
     return redirect(
@@ -1132,7 +1081,6 @@ def logout():
     methods=["POST"]
 )
 def add_creator():
-
     if not session.get(
         "admin",
         False
@@ -1141,34 +1089,18 @@ def add_creator():
             "error": "No autorizado"
         }), 403
 
-    # ========================================================
-    # UUID PROPIO
-    #
-    # IMPORTANTE:
-    # NO enviamos "id".
-    #
-    # Supabase genera automáticamente el id bigint.
-    # Python genera creator_uuid.
-    # ========================================================
-
     creator_uuid = str(
         uuid.uuid4()
     )
-
-    # ========================================================
-    # FOTO
-    # ========================================================
 
     photo_url = ""
     photo_storage_path = ""
 
     try:
-
         if (
             "photo" in request.files
             and request.files["photo"].filename
         ):
-
             photo_storage_path = upload_photo(
                 request.files["photo"]
             )
@@ -1178,15 +1110,10 @@ def add_creator():
             )
 
     except Exception as error:
-
         return jsonify({
             "error":
                 f"No se pudo subir la foto: {error}"
         }), 500
-
-    # ========================================================
-    # HANDLE
-    # ========================================================
 
     handle = normalize_handle(
         request.form.get(
@@ -1195,13 +1122,7 @@ def add_creator():
         )
     )
 
-    # ========================================================
-    # DATOS
-    # ========================================================
-
     creator = {
-
-        # UUID
         "creator_uuid":
             creator_uuid,
 
@@ -1302,16 +1223,7 @@ def add_creator():
             photo_storage_path
     }
 
-    # ========================================================
-    # GUARDAR EN SUPABASE
-    #
-    # NOTA:
-    # "id" NO aparece aquí.
-    # Supabase genera el bigint automáticamente.
-    # ========================================================
-
     try:
-
         response = requests.post(
             table_url(CREATORS_TABLE),
             headers={
@@ -1323,9 +1235,6 @@ def add_creator():
         )
 
         if not response.ok:
-
-            # Si falló DB después de subir foto,
-            # intentamos eliminar la foto para no dejar basura.
             if photo_storage_path:
                 delete_photo(
                     photo_storage_path
@@ -1345,7 +1254,6 @@ def add_creator():
         return jsonify(creator)
 
     except Exception as error:
-
         if photo_storage_path:
             delete_photo(
                 photo_storage_path
@@ -1366,7 +1274,6 @@ def add_creator():
     methods=["POST"]
 )
 def edit_creator(creator_id):
-
     if not session.get(
         "admin",
         False
@@ -1385,20 +1292,12 @@ def edit_creator(creator_id):
                 "Creador no encontrado"
         }), 404
 
-    # ========================================================
-    # HANDLE
-    # ========================================================
-
     handle = normalize_handle(
         request.form.get(
             "handle",
             ""
         )
     )
-
-    # ========================================================
-    # CAMPOS
-    # ========================================================
 
     fields = [
         "name",
@@ -1419,7 +1318,6 @@ def edit_creator(creator_id):
     update_data = {}
 
     for field in fields:
-
         update_data[field] = (
             request.form.get(
                 field,
@@ -1428,10 +1326,6 @@ def edit_creator(creator_id):
         )
 
     update_data["handle"] = handle
-
-    # ========================================================
-    # TIKTOK
-    # ========================================================
 
     tiktok_value = request.form.get(
         "tiktok",
@@ -1445,19 +1339,13 @@ def edit_creator(creator_id):
         tiktok_value
     )
 
-    # ========================================================
-    # FOTO NUEVA
-    # ========================================================
-
     new_photo_path = ""
 
     try:
-
         if (
             "photo" in request.files
             and request.files["photo"].filename
         ):
-
             new_photo_path = upload_photo(
                 request.files["photo"]
             )
@@ -1473,22 +1361,16 @@ def edit_creator(creator_id):
             ] = new_photo_path
 
     except Exception as error:
-
         return jsonify({
             "error":
                 f"No se pudo subir la nueva foto: {error}"
         }), 500
-
-    # ========================================================
-    # FILTRO
-    # ========================================================
 
     creator_filter = find_creator_filter(
         creator_id
     )
 
     if not creator_filter:
-
         if new_photo_path:
             delete_photo(
                 new_photo_path
@@ -1503,12 +1385,7 @@ def edit_creator(creator_id):
         iter(creator_filter.items())
     )
 
-    # ========================================================
-    # ACTUALIZAR
-    # ========================================================
-
     try:
-
         response = requests.patch(
             table_url(CREATORS_TABLE),
             headers={
@@ -1523,7 +1400,6 @@ def edit_creator(creator_id):
         )
 
         if not response.ok:
-
             if new_photo_path:
                 delete_photo(
                     new_photo_path
@@ -1537,13 +1413,7 @@ def edit_creator(creator_id):
 
         data = response.json()
 
-        # ====================================================
-        # ELIMINAR FOTO ANTERIOR
-        # SOLO DESPUÉS DE ACTUALIZAR CORRECTAMENTE
-        # ====================================================
-
         if new_photo_path:
-
             old_photo_path = creator.get(
                 "photo_storage_path",
                 ""
@@ -1567,7 +1437,6 @@ def edit_creator(creator_id):
         )
 
     except Exception as error:
-
         if new_photo_path:
             delete_photo(
                 new_photo_path
@@ -1588,7 +1457,6 @@ def edit_creator(creator_id):
     methods=["DELETE"]
 )
 def delete_creator(creator_id):
-
     if not session.get(
         "admin",
         False
@@ -1622,7 +1490,6 @@ def delete_creator(creator_id):
     )
 
     try:
-
         response = requests.delete(
             table_url(CREATORS_TABLE),
             headers={
@@ -1642,10 +1509,6 @@ def delete_creator(creator_id):
                     + supabase_error(response)
             }), 500
 
-        # ====================================================
-        # ELIMINAR FOTO DE STORAGE
-        # ====================================================
-
         old_photo_path = creator.get(
             "photo_storage_path",
             ""
@@ -1661,7 +1524,6 @@ def delete_creator(creator_id):
         })
 
     except Exception as error:
-
         return jsonify({
             "error":
                 f"Error eliminando creador: {error}"
@@ -1672,20 +1534,15 @@ def delete_creator(creator_id):
 # HEALTH CHECK
 # ============================================================
 
-@app.route(
-    "/health"
-)
+@app.route("/health")
 def health():
-
     if not supabase_configured():
-
         return jsonify({
             "status": "error",
             "supabase": False
         }), 500
 
     try:
-
         response = requests.get(
             table_url(CREATORS_TABLE),
             headers={
@@ -1700,7 +1557,6 @@ def health():
         )
 
         if not response.ok:
-
             return jsonify({
                 "status": "error",
                 "supabase": False,
@@ -1716,7 +1572,6 @@ def health():
         })
 
     except Exception as error:
-
         return jsonify({
             "status": "error",
             "supabase": False,
@@ -1730,7 +1585,6 @@ def health():
 
 @app.route("/creator/<creator_uuid>")
 def public_creator(creator_uuid):
-
     try:
         uuid.UUID(creator_uuid)
 
@@ -1744,26 +1598,17 @@ def public_creator(creator_uuid):
     if not creator:
         return "Creador no encontrado.", 404
 
-    # ========================================================
-    # CONTAR VISITA DEL PERFIL
-    # ========================================================
-
     view_key = (
         f"creator_view_{creator_uuid}"
     )
 
-    # Evita contar múltiples recargas del mismo visitante
-    # durante la misma sesión
-
     if not session.get(view_key):
-
         increment_creator_views(
             creator_uuid
         )
 
         session[view_key] = True
 
-        # Recargar datos actualizados
         creator = get_creator(
             creator_uuid
         )
@@ -1782,42 +1627,30 @@ def public_creator(creator_uuid):
 # ============================================================
 
 if __name__ == "__main__":
-
     print()
     print("==========================================")
     print(" VERTEXMONT")
     print("==========================================")
-
     print(
         "Supabase URL:",
         SUPABASE_URL
     )
-
     print(
         "Tabla de creadores:",
         CREATORS_TABLE
     )
-
     print(
         "Tabla de administrador:",
         ADMIN_TABLE
     )
-
     print(
         "Bucket de fotos:",
         SUPABASE_STORAGE_BUCKET
     )
-
     print(
         "Supabase configurado:",
         supabase_configured()
     )
-
-    print(
-        "TikTok verification:",
-        f"/{TIKTOK_VERIFICATION_FILENAME}"
-    )
-
     print("==========================================")
     print()
 
